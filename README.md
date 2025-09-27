@@ -75,6 +75,7 @@ python build.py
 # 或手动构建
 pip install pyinstaller
 pyinstaller build_exe.spec
+
 ```
 
 构建完成后，exe 文件将位于 `dist/IncrementalPacker.exe`。

@@ -3,17 +3,18 @@
 双列文件变更查看窗口
 """
 
-import tkinter as tk
-from tkinter import ttk, scrolledtext
-import customtkinter as ctk
-from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING, Dict
 import difflib
+import tkinter as tk
 import zipfile
-from core.make_win_center import center_on_screen
+from pathlib import Path
+from tkinter import ttk
+from typing import List, Optional, TYPE_CHECKING, Dict
 
-from core.file_comparator import FileChange, ChangeType
+import customtkinter as ctk
+
 from core.file_cache_manager import FileCacheManager
+from core.file_comparator import FileChange, ChangeType
+from core.make_win_center import center_on_screen, set_win_icon
 
 if TYPE_CHECKING:
     from .main_window import IncrementalPackerApp
@@ -47,6 +48,7 @@ class FileListWindow:
         # 创建窗口
         self.window = ctk.CTkToplevel()
         self.window.title("文件变更详情")
+        set_win_icon(self.window)
         self.window.grab_set()
 
         # 设置窗口居中和合理大小
@@ -155,7 +157,8 @@ class FileListWindow:
 
         # 创建树状表格 - 修复：不设置show="headings"，这样可以使用第0列
         columns = ("状态")
-        self.tree = ttk.Treeview(list_frame, columns=columns, height=20)
+        # 设置表格内容的字体
+        self.tree = ttk.Treeview(list_frame, columns=columns)
 
         # 设置列标题和宽度
         self.tree.heading("#0", text="路径", anchor="w")
@@ -218,7 +221,7 @@ class FileListWindow:
             fg="#000000",  # 黑色文字
             insertbackground="white",  # 光标颜色
             selectbackground="#1f6aa5",  # 选中文本背景色
-        state="disabled",
+            state="disabled",
         )
         self.diff_text.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -252,11 +255,13 @@ class FileListWindow:
     def _setup_text_tags(self):
         """设置文本标签样式"""
         # 添加行标记
-        self.diff_text.tag_configure("added", background="#e6ffed", foreground="#22863a",selectbackground="#1f6aa5")
-        self.diff_text.tag_configure("removed", background="#ffeef0", foreground="#d73a49",selectbackground="#1f6aa5")
-        self.diff_text.tag_configure("context", background="#ffffff", foreground="#333333",selectbackground="#1f6aa5")
-        self.diff_text.tag_configure("header", background="#f1f8ff", foreground="#0366d6",selectbackground="#1f6aa5", font=("微软雅黑", 12, "bold"))
-        self.diff_text.tag_configure("info", background="#fff5b4", foreground="#735c0f",selectbackground="#1f6aa5", font=("微软雅黑", 12, "bold"))
+        self.diff_text.tag_configure("added", background="#e6ffed", foreground="#22863a", selectbackground="#1f6aa5")
+        self.diff_text.tag_configure("removed", background="#ffeef0", foreground="#d73a49", selectbackground="#1f6aa5")
+        self.diff_text.tag_configure("context", background="#ffffff", foreground="#333333", selectbackground="#1f6aa5")
+        self.diff_text.tag_configure("header", background="#f1f8ff", foreground="#0366d6", selectbackground="#1f6aa5",
+                                     font=("微软雅黑", 12, "bold"))
+        self.diff_text.tag_configure("info", background="#fff5b4", foreground="#735c0f", selectbackground="#1f6aa5",
+                                     font=("微软雅黑", 12, "bold"))
 
     def _setup_events(self):
         """设置事件处理"""

@@ -9,12 +9,23 @@ PyInstaller 打包配置文件
 block_cipher = None
 
 a = Analysis(
-    ['main.py'],
+    [
+        'main.py', 'gui/main_window.py', 'gui/file_list_window.py',
+        'core/config_manager.py',
+        'core/file_cache_manager.py',
+        'core/file_comparator.py',
+        'core/file_scanner.py',
+        'core/make_win_center.py',
+        'core/package_builder.py',
+        'core/version_manager.py'
+    ],
     pathex=[],
     binaries=[],
     datas=[
         # 如果有静态资源文件，在这里添加
-        ('gui', 'core'),
+       ('logo.ico', '.'),
+       ('gui/*', 'gui'),
+       ('core/*', 'core')
     ],
     hiddenimports=[
         'customtkinter',

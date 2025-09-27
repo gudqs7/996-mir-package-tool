@@ -4,16 +4,18 @@
 """
 
 import difflib
-from pathlib import Path
-from typing import List, Optional, Dict, Tuple
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import List, Optional, Dict
+
 
 class ChangeType(Enum):
     """变更类型"""
     ADDED = "added"
     MODIFIED = "modified"
     DELETED = "deleted"
+
 
 @dataclass
 class FileChange:
@@ -27,9 +29,10 @@ class FileChange:
     old_mtime: Optional[float] = None
     new_mtime: Optional[float] = None
 
+
 class FileComparator:
     """文件对比器"""
-    
+
     def __init__(self, max_file_size_for_diff: int = 1024 * 1024):  # 1MB
         """
         初始化文件对比器
@@ -38,9 +41,9 @@ class FileComparator:
             max_file_size_for_diff: 进行内容对比的最大文件大小
         """
         self.max_file_size_for_diff = max_file_size_for_diff
-    
-    def compare_file_lists(self, old_files: Dict[str, dict], 
-                          new_files: Dict[str, dict]) -> List[FileChange]:
+
+    def compare_file_lists(self, old_files: Dict[str, dict],
+                           new_files: Dict[str, dict]) -> List[FileChange]:
         """
         比较文件列表
         
@@ -52,10 +55,10 @@ class FileComparator:
             文件变更列表
         """
         changes = []
-        
+
         old_paths = set(old_files.keys())
         new_paths = set(new_files.keys())
-        
+
         # 新增文件
         for path in new_paths - old_paths:
             file_info = new_files[path]
@@ -66,7 +69,7 @@ class FileComparator:
                 new_size=file_info['size'],
                 new_mtime=file_info['mtime']
             ))
-        
+
         # 删除文件
         for path in old_paths - new_paths:
             file_info = old_files[path]
@@ -77,12 +80,12 @@ class FileComparator:
                 old_size=file_info['size'],
                 old_mtime=file_info['mtime']
             ))
-        
+
         # 修改文件
         for path in old_paths & new_paths:
             old_info = old_files[path]
             new_info = new_files[path]
-            
+
             if old_info['hash'] != new_info['hash']:
                 changes.append(FileChange(
                     file_path=path,
@@ -94,11 +97,11 @@ class FileComparator:
                     old_mtime=old_info['mtime'],
                     new_mtime=new_info['mtime']
                 ))
-        
+
         return sorted(changes, key=lambda x: x.file_path)
-    
-    def get_file_diff(self, old_file_path: Path, new_file_path: Path, 
-                     context_lines: int = 3) -> Optional[List[str]]:
+
+    def get_file_diff(self, old_file_path: Path, new_file_path: Path,
+                      context_lines: int = 3) -> Optional[List[str]]:
         """
         获取文件内容差异
         
@@ -113,13 +116,13 @@ class FileComparator:
         try:
             # 检查文件大小
             if (old_file_path.exists() and old_file_path.stat().st_size > self.max_file_size_for_diff) or \
-               (new_file_path.exists() and new_file_path.stat().st_size > self.max_file_size_for_diff):
+                    (new_file_path.exists() and new_file_path.stat().st_size > self.max_file_size_for_diff):
                 return [f"文件太大，不显示内容差异（限制: {self.max_file_size_for_diff // 1024}KB）"]
-            
+
             # 读取文件内容
             old_content = []
             new_content = []
-            
+
             if old_file_path.exists():
                 try:
                     with open(old_file_path, 'r', encoding='utf-8') as f:
@@ -131,7 +134,7 @@ class FileComparator:
                             old_content = f.readlines()
                     except UnicodeDecodeError:
                         return ["旧文件编码不支持，无法显示内容差异"]
-            
+
             if new_file_path.exists():
                 try:
                     with open(new_file_path, 'r', encoding='utf-8') as f:
@@ -142,7 +145,7 @@ class FileComparator:
                             new_content = f.readlines()
                     except UnicodeDecodeError:
                         return ["新文件编码不支持，无法显示内容差异"]
-            
+
             # 生成差异
             diff = list(difflib.unified_diff(
                 old_content,
@@ -151,12 +154,12 @@ class FileComparator:
                 tofile=f"b/{new_file_path.name}",
                 n=context_lines
             ))
-            
+
             return diff
-            
+
         except Exception as e:
             return [f"生成差异失败: {e}"]
-    
+
     def is_text_file(self, file_path: Path) -> bool:
         """
         判断是否为文本文件
@@ -173,9 +176,9 @@ class FileComparator:
             '.c', '.cpp', '.h', '.hpp', '.java', '.cs', '.php', '.rb', '.go',
             '.sql', '.log', '.csv', '.tsv'
         }
-        
+
         return file_path.suffix.lower() in text_extensions
-    
+
     def format_size(self, size_bytes: int) -> str:
         """
         格式化文件大小

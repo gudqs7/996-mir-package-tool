@@ -2,24 +2,21 @@
 """
 主窗口
 """
-import ctypes
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import customtkinter as ctk
-from pathlib import Path
 import threading
+import tkinter as tk
+from pathlib import Path
+from tkinter import ttk, filedialog, messagebox
 from typing import Optional
 
-from core.file_scanner import FileScanner
-from core.version_manager import VersionManager
-from core.package_builder import PackageBuilder
-from core.file_comparator import FileComparator, ChangeType
-from core.config_manager import ConfigManager
+import customtkinter as ctk
 
+from core.config_manager import ConfigManager
+from core.file_comparator import FileComparator, ChangeType
+from core.file_scanner import FileScanner
+from core.make_win_center import center_on_screen, set_win_icon, get_windows_scaling_simple
+from core.package_builder import PackageBuilder
+from core.version_manager import VersionManager
 from gui.file_list_window import FileListWindow
-from gui.diff_viewer import DiffViewer
-from gui.settings_window import SettingsWindow
-from core.make_win_center import center_on_screen, get_windows_scaling_simple
 
 # 在CustomTkinter中使用
 scaling = get_windows_scaling_simple()
@@ -39,9 +36,9 @@ class IncrementalPackerApp:
     def __init__(self):
         """初始化应用"""
         self.root = ctk.CTk()
-        self.root.iconbitmap('logo.ico')
+        set_win_icon(self.root)
         self.root.title("996三端母包和增量包工具 by 心累 工具群: 820247699")
-        self.root.geometry("700x600")
+        self.root.geometry("600x500")
         # 绑定事件，在窗口显示后自动居中
         center_on_screen(self.root)
 
@@ -79,8 +76,6 @@ class IncrementalPackerApp:
 
         # 子窗口
         self.file_list_window: Optional[FileListWindow] = None
-        self.diff_viewer: Optional[DiffViewer] = None
-        self.settings_window: Optional[SettingsWindow] = None
         self._setup_ui()
 
         # 加载保存的目录配置
@@ -180,7 +175,7 @@ class IncrementalPackerApp:
         current_frame = ctk.CTkFrame(version_frame)
         current_frame.pack(side="left", fill="x", expand=True, padx=5, pady=5)
 
-        ctk.CTkLabel(current_frame, text="当前版本:").pack(side="left", padx=5)
+        ctk.CTkLabel(current_frame, text="打包版本号:").pack(side="left", padx=5)
         self.version_label = ctk.CTkLabel(
             current_frame,
             textvariable=self.current_version,
@@ -234,15 +229,6 @@ class IncrementalPackerApp:
             state="disabled"
         )
         self.package_btn.pack(side="left", padx=5)
-
-        # self.full_btn = ctk.CTkButton(
-        #     row2_frame,
-        #     text="全量打包",
-        #     width=120,
-        #     command=self._start_full_package,
-        #     state="disabled"
-        # )
-        # self.full_btn.pack(side="left", padx=5)
 
         self.reset_btn = ctk.CTkButton(
             row2_frame,
@@ -377,7 +363,6 @@ class IncrementalPackerApp:
             cache_manager = FileCacheManager.create_for_output_dir(Path(self.output_dir.get()))
 
             # 重新初始化打包构建器，传入新的缓存管理器
-            from core.package_builder import PackageBuilder
             self.package_builder = PackageBuilder(cache_manager)
 
             # 更新版本显示
@@ -733,21 +718,6 @@ class IncrementalPackerApp:
 
         tree.pack(fill="both", expand=True, padx=10, pady=10)
 
-    def _show_settings(self):
-        """显示设置窗口"""
-        if self.settings_window is None or not self.settings_window.window.winfo_exists():
-            self.settings_window = SettingsWindow(self.root, self)
-
-        self.settings_window.window.lift()
-
-    def show_file_diff(self, file_path, change_type):
-        """显示文件差异"""
-        if self.diff_viewer is None or not self.diff_viewer.window.winfo_exists():
-            self.diff_viewer = DiffViewer(self.root)
-
-        self.diff_viewer.show_diff(file_path, change_type, self.input_dir.get())
-        self.diff_viewer.window.lift()
-
     def _on_window_close(self):
         """窗口关闭事件"""
         # 在退出前保存配置
@@ -762,10 +732,6 @@ class IncrementalPackerApp:
         # 关闭子窗口
         if self.file_list_window and self.file_list_window.window.winfo_exists():
             self.file_list_window.window.destroy()
-        if self.diff_viewer and self.diff_viewer.window.winfo_exists():
-            self.diff_viewer.window.destroy()
-        if self.settings_window and self.settings_window.window.winfo_exists():
-            self.settings_window.window.destroy()
 
         self.root.destroy()
 
