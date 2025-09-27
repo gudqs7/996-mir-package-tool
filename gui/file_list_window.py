@@ -7,12 +7,13 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext
 import customtkinter as ctk
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Dict
 import difflib
 import zipfile
 from datetime import datetime
 
 from core.file_comparator import FileChange, ChangeType
+from core.file_cache_manager import FileCacheManager
 
 if TYPE_CHECKING:
     from .main_window import IncrementalPackerApp
@@ -31,15 +32,41 @@ class FileListWindow:
         self.app = app
         self.changes: List[FileChange] = []
         self.selected_change: Optional[FileChange] = None
+        self.item_to_change: Dict[str, FileChange] = {}  # 存储tree item到change对象的映射
+        
+        # 使用基于输出目录的缓存管理器
+        output_dir = app.output_dir.get()
+        if output_dir:
+            from pathlib import Path
+            self.cache_manager = FileCacheManager.create_for_output_dir(Path(output_dir))
+        else:
+            # 如果没有输出目录，使用默认缓存
+            self.cache_manager = FileCacheManager()
         
         # 创建窗口
         self.window = tk.Toplevel(parent)
         self.window.title("文件变更详情")
-        self.window.geometry("1200x800")
+        
+        # 设置窗口居中和合理大小
+        self._center_window(1400, 900)
         self.window.transient(parent)
+        self.window.grab_set()  # 模态窗口
         
         self._setup_ui()
         self._setup_events()
+    
+    def _center_window(self, width, height):
+        """将窗口居中显示"""
+        # 获取屏幕尺寸
+        screen_width = self.window.winfo_screenwidth()
+        screen_height = self.window.winfo_screenheight()
+        
+        # 计算位置
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+        
+        self.window.geometry(f"{width}x{height}+{x}+{y}")
+        self.window.minsize(1000, 600)  # 设置最小尺寸
     
     def _setup_ui(self):
         """设置UI界面"""
@@ -98,7 +125,7 @@ class FileListWindow:
         """设置左侧文件列表"""
         left_frame = ctk.CTkFrame(parent)
         left_frame.pack(side="left", fill="both", expand=False, padx=5, pady=5)
-        left_frame.configure(width=400)
+        left_frame.configure(width=450)
         
         # 列表标题
         list_title = ctk.CTkLabel(
@@ -137,26 +164,35 @@ class FileListWindow:
         list_frame = ctk.CTkFrame(left_frame)
         list_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
-        # 创建树状表格
+        # 创建树状表格 - 修复：不设置show="headings"，这样可以使用第0列
         columns = ("状态", "文件名", "大小")
-        self.tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=20)
+        self.tree = ttk.Treeview(list_frame, columns=columns, height=20)
         
         # 设置列标题和宽度
+        self.tree.heading("#0", text="路径", anchor="w")
         self.tree.heading("状态", text="状态")
-        self.tree.heading("文件名", text="文件名")
+        self.tree.heading("文件名", text="文件名")  
         self.tree.heading("大小", text="大小变化")
         
+        # 设置列宽度
+        self.tree.column("#0", width=200, anchor="w")
         self.tree.column("状态", width=60, anchor="center")
-        self.tree.column("文件名", width=250, anchor="w")
+        self.tree.column("文件名", width=150, anchor="w")
         self.tree.column("大小", width=80, anchor="center")
         
         # 添加滚动条
         scrollbar_y = ttk.Scrollbar(list_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar_y.set)
+        scrollbar_x = ttk.Scrollbar(list_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
         
         # 布局
-        self.tree.pack(side="left", fill="both", expand=True)
-        scrollbar_y.pack(side="right", fill="y")
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        scrollbar_y.grid(row=0, column=1, sticky="ns")
+        scrollbar_x.grid(row=1, column=0, sticky="ew")
+        
+        # 配置grid权重
+        list_frame.grid_rowconfigure(0, weight=1)
+        list_frame.grid_columnconfigure(0, weight=1)
         
         # 阻止左侧框架收缩
         left_frame.pack_propagate(False)
@@ -257,6 +293,9 @@ class FileListWindow:
         for item in self.tree.get_children():
             self.tree.delete(item)
         
+        # 清空映射字典
+        self.item_to_change.clear()
+        
         # 根据过滤条件获取数据
         filtered_changes = self._get_filtered_changes()
         
@@ -266,14 +305,17 @@ class FileListWindow:
             size_change = self._get_size_change_text(change)
             file_name = Path(change.file_path).name
             
-            item_id = self.tree.insert("", "end", values=(
-                status_text,
-                file_name,
-                size_change
-            ))
+            # 使用文件路径作为第0列的显示文本
+            item_id = self.tree.insert("", "end", 
+                                     text=change.file_path,  # 第0列显示完整路径
+                                     values=(
+                                         status_text,
+                                         file_name,
+                                         size_change
+                                     ))
             
-            # 存储完整的change对象
-            self.tree.set(item_id, "#0", change.file_path)
+            # 将item_id映射到change对象
+            self.item_to_change[item_id] = change
         
         # 如果有项目，默认选择第一个
         items = self.tree.get_children()
@@ -344,16 +386,9 @@ class FileListWindow:
             self._show_default_message()
             return
         
-        # 获取选中项的文件路径
+        # 从映射字典中获取对应的FileChange对象
         item_id = selection[0]
-        file_path = self.tree.set(item_id, "#0")
-        
-        # 找到对应的FileChange对象
-        selected_change = None
-        for change in self.changes:
-            if change.file_path == file_path:
-                selected_change = change
-                break
+        selected_change = self.item_to_change.get(item_id)
         
         if selected_change:
             self.selected_change = selected_change
@@ -524,7 +559,13 @@ class FileListWindow:
                 self.diff_text.tag_add("context", "end-2l", "end-1l")
     
     def _get_file_from_previous_version(self, file_path: str) -> Optional[str]:
-        """从上个版本的zip包中获取文件内容"""
+        """从缓存中获取文件的上一个版本内容"""
+        # 优先从缓存获取
+        cached_content = self.cache_manager.get_cached_content(file_path)
+        if cached_content is not None:
+            return cached_content
+        
+        # 如果缓存中没有，尝试从zip包获取（向后兼容）
         if not self.app.version_manager:
             return None
         

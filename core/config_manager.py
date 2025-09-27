@@ -31,9 +31,19 @@ class ConfigManager:
             self.config_dir.mkdir(parents=True, exist_ok=True)
         
         self._config: Dict[str, Any] = {}
-        self._default_config = {
+        self.current_version_index = 0  # 当前选中的版本索引 (0-9)
+        
+        # 版本配置模板
+        self._version_config_template = {
             "input_directory": "",
-            "output_directory": "",
+            "output_directory": ""
+        }
+        
+        self._default_config = {
+            "current_version_index": 0,  # 当前版本索引
+            "versions": {  # 10个版本的配置
+                str(i): self._version_config_template.copy() for i in range(10)
+            },
             "window_geometry": "800x600",
             "window_position": "",
             "last_updated": "",
@@ -145,21 +155,66 @@ class ConfigManager:
         if auto_save:
             self.save_config()
     
-    def get_input_directory(self) -> str:
+    def get_current_version_index(self) -> int:
+        """获取当前版本索引"""
+        return self.get("current_version_index", 0)
+    
+    def set_current_version_index(self, index: int, auto_save: bool = True):
+        """设置当前版本索引"""
+        if 0 <= index <= 9:
+            self.current_version_index = index
+            self.set("current_version_index", index, auto_save)
+    
+    def get_input_directory(self, version_index: Optional[int] = None) -> str:
         """获取输入目录"""
-        return self.get("input_directory", "")
+        if version_index is None:
+            version_index = self.current_version_index
+        return self.get(f"versions.{version_index}.input_directory", "")
     
-    def set_input_directory(self, directory: str, auto_save: bool = True):
+    def set_input_directory(self, directory: str, version_index: Optional[int] = None, auto_save: bool = True):
         """设置输入目录"""
-        self.set("input_directory", directory, auto_save)
+        if version_index is None:
+            version_index = self.current_version_index
+        self.set(f"versions.{version_index}.input_directory", directory, auto_save)
     
-    def get_output_directory(self) -> str:
+    def get_output_directory(self, version_index: Optional[int] = None) -> str:
         """获取输出目录"""
-        return self.get("output_directory", "")
+        if version_index is None:
+            version_index = self.current_version_index
+        return self.get(f"versions.{version_index}.output_directory", "")
     
-    def set_output_directory(self, directory: str, auto_save: bool = True):
+    def set_output_directory(self, directory: str, version_index: Optional[int] = None, auto_save: bool = True):
         """设置输出目录"""
-        self.set("output_directory", directory, auto_save)
+        if version_index is None:
+            version_index = self.current_version_index
+        self.set(f"versions.{version_index}.output_directory", directory, auto_save)
+    
+    def get_version_config(self, version_index: int) -> Dict[str, str]:
+        """获取指定版本的配置"""
+        if 0 <= version_index <= 9:
+            return {
+                "input_directory": self.get(f"versions.{version_index}.input_directory", ""),
+                "output_directory": self.get(f"versions.{version_index}.output_directory", "")
+            }
+        return self._version_config_template.copy()
+    
+    def set_version_config(self, version_index: int, input_dir: str, output_dir: str, auto_save: bool = True):
+        """设置指定版本的配置"""
+        if 0 <= version_index <= 9:
+            self.set(f"versions.{version_index}.input_directory", input_dir, False)
+            self.set(f"versions.{version_index}.output_directory", output_dir, auto_save)
+    
+    def get_all_versions_info(self) -> Dict[int, Dict[str, str]]:
+        """获取所有版本的信息概览"""
+        versions_info = {}
+        for i in range(10):
+            config = self.get_version_config(i)
+            versions_info[i] = {
+                "input_directory": config["input_directory"],
+                "output_directory": config["output_directory"],
+                "has_config": bool(config["input_directory"] and config["output_directory"])
+            }
+        return versions_info
     
     def get_window_geometry(self) -> str:
         """获取窗口几何信息"""

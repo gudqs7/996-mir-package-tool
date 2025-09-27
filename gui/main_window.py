@@ -14,10 +14,11 @@ from core.file_scanner import FileScanner
 from core.version_manager import VersionManager
 from core.package_builder import PackageBuilder
 from core.file_comparator import FileComparator, ChangeType
+from core.config_manager import ConfigManager
 
-from .file_list_window import FileListWindow
-from .diff_viewer import DiffViewer
-from .settings_window import SettingsWindow
+from gui.file_list_window import FileListWindow
+from gui.diff_viewer import DiffViewer
+from gui.settings_window import SettingsWindow
 
 # 设置主题
 ctk.set_appearance_mode("system")  # 系统模式
@@ -33,11 +34,15 @@ class IncrementalPackerApp:
         self.root.geometry("800x600")
         self.root.minsize(600, 400)
         
+        # 配置管理器（先初始化）
+        self.config = ConfigManager()
+        
         # 应用状态
         self.input_dir = tk.StringVar()
         self.output_dir = tk.StringVar()
         self.current_version = tk.StringVar(value="v1.0.0")
         self.status_text = tk.StringVar(value="就绪")
+        self.version_choice = tk.StringVar()  # 版本选择下拉框的值
         
         # 核心组件
         self.file_scanner = FileScanner()
@@ -59,9 +64,8 @@ class IncrementalPackerApp:
         self._setup_ui()
         self._setup_events()
         
-        # 启动后触发目录变更事件以加载保存的目录
-        # if saved_input or saved_output:
-        #     self._on_directory_changed()
+        # 加载保存的目录配置
+        self._load_saved_directories()
     
     def _setup_ui(self):
         """设置UI界面"""
@@ -96,6 +100,23 @@ class IncrementalPackerApp:
         """创建目录选择区域"""
         dir_frame = ctk.CTkFrame(parent)
         dir_frame.pack(fill="x", padx=10, pady=5)
+        
+        # 版本选择区域
+        version_select_frame = ctk.CTkFrame(dir_frame)
+        version_select_frame.pack(fill="x", padx=10, pady=5)
+        
+        ctk.CTkLabel(version_select_frame, text="版本配置:", width=80).pack(side="left", padx=5)
+        
+        # 版本下拉框
+        version_options = [f"版本 {i+1}" for i in range(10)]
+        self.version_combobox = ctk.CTkComboBox(
+            version_select_frame,
+            values=version_options,
+            variable=self.version_choice,
+            width=120,
+            command=self._on_version_changed
+        )
+        self.version_combobox.pack(side="left", padx=5)
         
         # 输入目录
         input_frame = ctk.CTkFrame(dir_frame)
@@ -250,6 +271,9 @@ class IncrementalPackerApp:
         self.input_dir.trace('w', self._on_directory_changed)
         self.output_dir.trace('w', self._on_directory_changed)
         
+        # 版本选择变更事件
+        self.version_choice.trace('w', self._on_version_choice_changed)
+        
         # 窗口关闭事件
         self.root.protocol("WM_DELETE_WINDOW", self._on_window_close)
     
@@ -258,19 +282,90 @@ class IncrementalPackerApp:
         directory = filedialog.askdirectory(title="选择输入目录")
         if directory:
             self.input_dir.set(directory)
+            # 立即保存配置
+            self._save_current_config()
     
     def _select_output_dir(self):
         """选择输出目录"""
         directory = filedialog.askdirectory(title="选择输出目录")
         if directory:
             self.output_dir.set(directory)
+            # 立即保存配置
+            self._save_current_config()
+    
+    def _on_version_changed(self, selection):
+        """版本下拉框选择变更处理"""
+        # 获取选中的版本索引
+        try:
+            version_text = selection
+            if "版本 " in version_text:
+                version_index = int(version_text.split("版本 ")[1]) - 1
+                if 0 <= version_index <= 9:
+                    self._switch_to_version(version_index)
+        except (ValueError, IndexError) as e:
+            print(f"版本切换错误: {e}")
+    
+    def _on_version_choice_changed(self, *args):
+        """版本选择变量变更处理"""
+        choice = self.version_choice.get()
+        if choice:
+            self._on_version_changed(choice)
+    
+    def _switch_to_version(self, version_index: int):
+        """切换到指定版本"""
+        try:
+            # 保存当前版本的配置
+            self._save_current_config()
+            
+            # 更新配置管理器的当前版本索引
+            self.config.set_current_version_index(version_index)
+            
+            # 加载新版本的配置
+            version_config = self.config.get_version_config(version_index)
+            
+            # 更新UI显示
+            self.input_dir.set(version_config["input_directory"])
+            self.output_dir.set(version_config["output_directory"])
+            
+            # 触发目录变更事件来更新其他组件
+            self._on_directory_changed()
+            
+            self.status_text.set(f"已切换到版本 {version_index + 1}")
+            
+        except Exception as e:
+            print(f"切换版本失败: {e}")
+            self.status_text.set(f"切换版本失败: {e}")
+    
+    def _save_current_config(self):
+        """保存当前版本的配置"""
+        try:
+            current_index = self.config.get_current_version_index()
+            input_dir = self.input_dir.get()
+            output_dir = self.output_dir.get()
+            
+            # 保存当前版本的配置
+            self.config.set_version_config(current_index, input_dir, output_dir)
+            
+        except Exception as e:
+            print(f"保存配置失败: {e}")
     
     def _on_directory_changed(self, *args):
         """目录变更事件处理"""
+        # 保存配置
+        self._save_current_config()
+        
         if self.input_dir.get() and self.output_dir.get():
-            # 初始化版本管理器
+            # 初始化版本管理器（使用输出目录下的cache）
             cache_dir = Path(self.output_dir.get()) / "cache"
             self.version_manager = VersionManager(cache_dir)
+            
+            # 初始化文件缓存管理器（使用输出目录下的cache）
+            from core.file_cache_manager import FileCacheManager
+            cache_manager = FileCacheManager.create_for_output_dir(Path(self.output_dir.get()))
+            
+            # 重新初始化打包构建器，传入新的缓存管理器
+            from core.package_builder import PackageBuilder
+            self.package_builder = PackageBuilder(cache_manager)
             
             # 更新版本显示
             next_version = self.version_manager.get_next_version()
@@ -292,6 +387,9 @@ class IncrementalPackerApp:
         if not input_path.exists():
             messagebox.showerror("错误", "输入目录不存在")
             return
+        
+        # 在扫描前保存配置
+        self._save_current_config()
         
         self.is_scanning = True
         self.scan_btn.configure(text="停止扫描", command=self._stop_scan)
@@ -417,6 +515,9 @@ class IncrementalPackerApp:
             messagebox.showinfo("信息", "没有文件变化，无需打包")
             return
         
+        # 在打包前保存配置
+        self._save_current_config()
+        
         # 过滤出需要打包的文件（排除删除的文件）
         files_to_package = [
             change.file_path for change in self.file_changes 
@@ -435,6 +536,9 @@ class IncrementalPackerApp:
         if not self.current_file_info:
             messagebox.showerror("错误", "请先扫描文件")
             return
+        
+        # 在打包前保存配置
+        self._save_current_config()
         
         files_to_package = list(self.current_file_info.keys())
         version = self.version_manager.get_next_version(is_full_package=True)
@@ -615,6 +719,9 @@ class IncrementalPackerApp:
     
     def _on_window_close(self):
         """窗口关闭事件"""
+        # 在退出前保存配置
+        self._save_current_config()
+        
         # 保存窗口几何信息
         geometry = self.root.geometry()
         self.config.set_window_geometry(geometry)
@@ -634,6 +741,36 @@ class IncrementalPackerApp:
             self.settings_window.window.destroy()
         
         self.root.destroy()
+    
+    def _load_saved_directories(self):
+        """加载保存的目录配置"""
+        try:
+            # 获取当前版本索引
+            current_index = self.config.get_current_version_index()
+            
+            # 设置版本下拉框的选中值
+            self.version_choice.set(f"版本 {current_index + 1}")
+            
+            # 从配置中加载保存的目录
+            saved_input = self.config.get_input_directory(current_index)
+            saved_output = self.config.get_output_directory(current_index)
+            
+            if saved_input and Path(saved_input).exists():
+                self.input_dir.set(saved_input)
+                
+            if saved_output:
+                self.output_dir.set(saved_output)
+                
+            # 如果有保存的目录，触发目录变更事件
+            if saved_input or saved_output:
+                self._on_directory_changed()
+                
+            self.status_text.set(f"已加载版本 {current_index + 1} 配置")
+            
+        except Exception as e:
+            print(f"加载保存的目录配置失败: {e}")
+            # 设置默认版本
+            self.version_choice.set("版本 1")
     
     def run(self):
         """运行应用"""

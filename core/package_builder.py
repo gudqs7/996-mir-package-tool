@@ -9,12 +9,15 @@ from typing import Dict, List, Optional, Callable
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
+from .file_cache_manager import FileCacheManager
+
 class PackageBuilder:
     """打包构建器"""
     
-    def __init__(self):
+    def __init__(self, cache_manager: Optional[FileCacheManager] = None):
         self._stop_build = False
         self._lock = threading.Lock()
+        self.cache_manager = cache_manager or FileCacheManager()
     
     def create_package(self, source_dir: Path, output_file: Path, 
                       files_to_include: List[str], 
@@ -50,6 +53,10 @@ class PackageBuilder:
                         try:
                             # 使用相对路径保持目录结构
                             zf.write(source_file, relative_path)
+                            
+                            # 缓存文件内容用于后续差异对比
+                            self.cache_manager.cache_file(source_file, relative_path)
+                            
                             processed += 1
                             
                             if progress_callback:
