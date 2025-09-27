@@ -149,7 +149,7 @@ class FileScanner:
         processed = 0
         
         # 使用线程池并行处理
-        max_workers = min(8, len(all_files)) if all_files else 1
+        max_workers = min(32, len(all_files)) if all_files else 1
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # 提交任务

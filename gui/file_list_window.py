@@ -228,7 +228,7 @@ class FileListWindow:
         self.diff_text = scrolledtext.ScrolledText(
             diff_frame,
             wrap=tk.NONE,
-            font=("Consolas", 10),
+            font=("等线", 14),
             bg="#ffffff",  # 白色背景
             fg="#000000",  # 黑色文字
             insertbackground="black",
@@ -250,9 +250,8 @@ class FileListWindow:
         self.diff_text.tag_configure("added", background="#e6ffed", foreground="#22863a")
         self.diff_text.tag_configure("removed", background="#ffeef0", foreground="#d73a49")
         self.diff_text.tag_configure("context", background="#ffffff", foreground="#586069")
-        self.diff_text.tag_configure("header", background="#f1f8ff", foreground="#0366d6", font=("Consolas", 10, "bold"))
+        self.diff_text.tag_configure("header", background="#f1f8ff", foreground="#0366d6", font=("等线", 16, "bold"))
         self.diff_text.tag_configure("info", background="#fff5b4", foreground="#735c0f")
-        self.diff_text.tag_configure("line_number", background="#fafbfc", foreground="#586069", font=("Consolas", 9))
     
     def _setup_events(self):
         """设置事件处理"""
@@ -406,11 +405,11 @@ class FileListWindow:
         
         self.file_path_label.configure(text="")
         
-        message = "请在左侧选择一个文件查看变更详情\\n\\n"
-        message += "说明:\\n"
-        message += "• 绿色背景：新增的内容\\n"
-        message += "• 红色背景：删除的内容\\n"
-        message += "• 蓝色背景：文件头信息\\n"
+        message = "请在左侧选择一个文件查看变更详情\n\n"
+        message += "说明:\n"
+        message += "• 绿色背景：新增的内容\n"
+        message += "• 红色背景：删除的内容\n"
+        message += "• 蓝色背景：文件头信息\n"
         message += "• 黄色背景：重要提示信息"
         
         self.diff_text.insert(1.0, message)
@@ -438,17 +437,17 @@ class FileListWindow:
         current_file = Path(self.app.input_dir.get()) / change.file_path
         
         # 插入文件头
-        header = f"=== 新增文件: {change.file_path} ===\\n"
+        header = f"=== 新增文件: {change.file_path} ===\n"
         self.diff_text.insert(tk.END, header)
         self.diff_text.tag_add("header", "end-2l", "end-1l")
         
         if not current_file.exists():
-            self.diff_text.insert(tk.END, "文件不存在\\n")
+            self.diff_text.insert(tk.END, "文件不存在\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
         
         if not self._is_text_file(current_file):
-            self.diff_text.insert(tk.END, "二进制文件，无法显示内容\\n")
+            self.diff_text.insert(tk.END, "二进制文件，无法显示内容\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
         
@@ -459,19 +458,19 @@ class FileListWindow:
             
             # 显示内容（所有行都标记为添加）
             for i, line in enumerate(content.splitlines(), 1):
-                line_text = f"+{i:4d} | {line}\\n"
+                line_text = f"+{i:4d} | {line}\n"
                 self.diff_text.insert(tk.END, line_text)
                 self.diff_text.tag_add("added", "end-2l", "end-1l")
                 
         except Exception as e:
-            error_msg = f"读取文件失败: {e}\\n"
+            error_msg = f"读取文件失败: {e}\n"
             self.diff_text.insert(tk.END, error_msg)
             self.diff_text.tag_add("info", "end-2l", "end-1l")
     
     def _show_deleted_file(self, change: FileChange):
         """显示删除文件"""
         # 插入文件头
-        header = f"=== 删除文件: {change.file_path} ===\\n"
+        header = f"=== 删除文件: {change.file_path} ===\n"
         self.diff_text.insert(tk.END, header)
         self.diff_text.tag_add("header", "end-2l", "end-1l")
         
@@ -479,13 +478,13 @@ class FileListWindow:
         old_content = self._get_file_from_previous_version(change.file_path)
         
         if old_content is None:
-            self.diff_text.insert(tk.END, "无法获取文件的历史版本内容\\n")
+            self.diff_text.insert(tk.END, "无法获取文件的历史版本内容\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
         
         # 显示删除的内容
         for i, line in enumerate(old_content.splitlines(), 1):
-            line_text = f"-{i:4d} | {line}\\n"
+            line_text = f"-{i:4d} | {line}\n"
             self.diff_text.insert(tk.END, line_text)
             self.diff_text.tag_add("removed", "end-2l", "end-1l")
     
@@ -494,17 +493,17 @@ class FileListWindow:
         current_file = Path(self.app.input_dir.get()) / change.file_path
         
         # 插入文件头
-        header = f"=== 修改文件: {change.file_path} ===\\n"
+        header = f"=== 红色代表删除,绿色代表新增;修改的行一般是删除原行+新增修改后的行 ===\n"
         self.diff_text.insert(tk.END, header)
         self.diff_text.tag_add("header", "end-2l", "end-1l")
         
         if not current_file.exists():
-            self.diff_text.insert(tk.END, "当前文件不存在\\n")
+            self.diff_text.insert(tk.END, "当前文件不存在\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
         
         if not self._is_text_file(current_file):
-            self.diff_text.insert(tk.END, "二进制文件，无法显示内容差异\\n")
+            self.diff_text.insert(tk.END, "二进制文件，无法显示内容差异\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
         
@@ -516,11 +515,11 @@ class FileListWindow:
         # 获取历史版本内容
         old_content = self._get_file_from_previous_version(change.file_path)
         if old_content is None:
-            self.diff_text.insert(tk.END, "无法获取文件的历史版本，显示当前内容：\\n\\n")
+            self.diff_text.insert(tk.END, "无法获取文件的历史版本，显示当前内容：\n\n")
             self.diff_text.tag_add("info", "end-3l", "end-1l")
             
             for i, line in enumerate(current_content.splitlines(), 1):
-                line_text = f" {i:4d} | {line}\\n"
+                line_text = f" {i:4d} | {line}\n"
                 self.diff_text.insert(tk.END, line_text)
                 self.diff_text.tag_add("context", "end-2l", "end-1l")
             return
@@ -536,26 +535,41 @@ class FileListWindow:
         diff = difflib.unified_diff(
             old_lines,
             new_lines,
-            fromfile=f"旧版本/{file_path}",
-            tofile=f"新版本/{file_path}",
-            lineterm=""
+            fromfile=f"旧版本\\{file_path}",
+            tofile=f"新版本\\{file_path}"
         )
+        old_line_num = 0
+        new_line_num = 0
+        in_hunk = False
+        current_hunk_header = ""
         
         for line in diff:
             if line.startswith("+++") or line.startswith("---"):
-                self.diff_text.insert(tk.END, line + "\\n")
+                self.diff_text.insert(tk.END, line)
                 self.diff_text.tag_add("header", "end-2l", "end-1l")
             elif line.startswith("@@"):
-                self.diff_text.insert(tk.END, line + "\\n")
+                in_hunk = True
+                current_hunk_header = line
+                # 从 @@ -x,y +z,w @@ 解析行号信息
+                import re
+                match = re.search(r'@@ -(\d+),(\d+) \+(\d+),(\d+) @@', line)
+                if match:
+                    old_line_num = int(match.group(1)) - 1  # 从指定行号开始
+                    new_line_num = int(match.group(3)) - 1
+                self.diff_text.insert(tk.END, line)
                 self.diff_text.tag_add("info", "end-2l", "end-1l")
             elif line.startswith("+"):
-                self.diff_text.insert(tk.END, line + "\\n")
+                new_line_num += 1
+                self.diff_text.insert(tk.END, f"{old_line_num:3d} {new_line_num:3d} {line}")
                 self.diff_text.tag_add("added", "end-2l", "end-1l")
             elif line.startswith("-"):
-                self.diff_text.insert(tk.END, line + "\\n")
+                old_line_num += 1
+                self.diff_text.insert(tk.END, f"{-old_line_num:3d} {new_line_num:3d} {line}")
                 self.diff_text.tag_add("removed", "end-2l", "end-1l")
             else:
-                self.diff_text.insert(tk.END, line + "\\n")
+                old_line_num += 1
+                new_line_num += 1
+                self.diff_text.insert(tk.END, line)
                 self.diff_text.tag_add("context", "end-2l", "end-1l")
     
     def _get_file_from_previous_version(self, file_path: str) -> Optional[str]:
@@ -620,7 +634,7 @@ class FileListWindow:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 return f.read()
         except IOError as e:
-            error_msg = f"读取文件失败: {e}\\n"
+            error_msg = f"读取文件失败: {e}\n"
             self.diff_text.insert(tk.END, error_msg)
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return None

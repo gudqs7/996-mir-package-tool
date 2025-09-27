@@ -49,7 +49,7 @@ class ConfigManager:
             "last_updated": "",
             "scan_filters": {
                 "target_paths": ["Mir200", "DBServer/dbsrc.ini"],
-                "exclude_files": ["Mir200/M2Server.map", "Mir200/GlobalVal.ini"],
+                "exclude_files": ["Mir200\\M2Server.map", "Mir200\\GlobalVal.ini"],
                 "exclude_folders": ["Log"],
                 "exclude_extensions": [".log", ".zip", ".dll", ".exe", ".json"]
             },
@@ -201,7 +201,7 @@ class ConfigManager:
     def set_version_config(self, version_index: int, input_dir: str, output_dir: str, auto_save: bool = True):
         """设置指定版本的配置"""
         if 0 <= version_index <= 9:
-            self.set(f"versions.{version_index}.input_directory", input_dir, False)
+            self.set(f"versions.{version_index}.input_directory", input_dir, auto_save)
             self.set(f"versions.{version_index}.output_directory", output_dir, auto_save)
     
     def get_all_versions_info(self) -> Dict[int, Dict[str, str]]:

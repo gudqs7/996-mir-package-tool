@@ -30,9 +30,11 @@ class IncrementalPackerApp:
     def __init__(self):
         """初始化应用"""
         self.root = ctk.CTk()
-        self.root.title("增量文件打包工具 v1.0.0")
-        self.root.geometry("800x600")
-        self.root.minsize(600, 400)
+        self.root.title("996三端母包和增量包工具 by 心累 工具群: 820247699")
+        self.root.geometry("700x600")
+        self.root.minsize(700, 600)
+        # 绑定事件，在窗口显示后自动居中
+        self.center_on_screen()
         
         # 配置管理器（先初始化）
         self.config = ConfigManager()
@@ -60,13 +62,29 @@ class IncrementalPackerApp:
         self.file_list_window: Optional[FileListWindow] = None
         self.diff_viewer: Optional[DiffViewer] = None
         self.settings_window: Optional[SettingsWindow] = None
-        
         self._setup_ui()
-        self._setup_events()
-        
+
         # 加载保存的目录配置
         self._load_saved_directories()
-    
+
+        self._setup_events()
+
+    def center_on_screen(self, event=None):
+        """窗口显示后自动居中"""
+        self.root.update_idletasks()  # 更新窗口信息
+
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+
+        self.root.geometry(f"+{x}+{y}")
+        self.root.unbind("<Map>")  # 只居中一次
+
     def _setup_ui(self):
         """设置UI界面"""
         # 主框架
