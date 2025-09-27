@@ -6,21 +6,39 @@
 import os
 import hashlib
 from pathlib import Path
-from typing import Dict, Set, Optional
+from typing import Dict, Set, Optional, List
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class FileScanner:
     """文件扫描器，负责扫描目录和计算文件hash"""
     
-    def __init__(self, exclude_extensions: Optional[Set[str]] = None):
+    def __init__(self, 
+                 target_paths: Optional[List[str]] = None,
+                 exclude_files: Optional[List[str]] = None,
+                 exclude_folders: Optional[List[str]] = None,
+                 exclude_extensions: Optional[List[str]] = None):
         """
         初始化文件扫描器
         
         Args:
-            exclude_extensions: 需要排除的文件扩展名集合
+            target_paths: 目标扫描路径列表 (相对于输入目录)
+            exclude_files: 需要排除的具体文件列表 (相对路径)
+            exclude_folders: 需要排除的文件夹列表
+            exclude_extensions: 需要排除的文件扩展名列表
         """
-        self.exclude_extensions = exclude_extensions or {'.dll', '.exe', '.json'}
+        # 只扫描指定的路径
+        self.target_paths = target_paths or ["Mir200", "DBServer/dbsrc.ini"]
+        
+        # 排除的具体文件
+        self.exclude_files = set(exclude_files or ["Mir200/M2Server.map", "Mir200/GlobalVal.ini"])
+        
+        # 排除的文件夹
+        self.exclude_folders = set(exclude_folders or ["Log"])
+        
+        # 排除的扩展名
+        self.exclude_extensions = set(exclude_extensions or [".log", ".zip", ".dll", ".exe", ".json"])
+        
         self._stop_scan = False
         self._lock = threading.Lock()
     
@@ -47,21 +65,35 @@ class FileScanner:
             print(f"读取文件失败 {file_path}: {e}")
             return ""
     
-    def should_exclude_file(self, file_path: Path) -> bool:
+    def should_exclude_file(self, file_path: Path, relative_path: str) -> bool:
         """
         判断文件是否应该被排除
         
         Args:
-            file_path: 文件路径
+            file_path: 文件绝对路径
+            relative_path: 文件相对路径
             
         Returns:
             是否排除该文件
         """
-        return file_path.suffix.lower() in self.exclude_extensions
+        # 检查扩展名
+        if file_path.suffix.lower() in self.exclude_extensions:
+            return True
+        
+        # 检查是否在排除文件列表中
+        if relative_path in self.exclude_files:
+            return True
+        
+        # 检查父目录是否在排除列表中
+        for part in Path(relative_path).parts:
+            if part in self.exclude_folders:
+                return True
+        
+        return False
     
     def scan_directory(self, directory: Path, progress_callback=None) -> Dict[str, dict]:
         """
-        扫描目录中的所有文件并计算hash
+        扫描目录中的指定文件并计算hash
         
         Args:
             directory: 要扫描的目录
@@ -76,16 +108,42 @@ class FileScanner:
         if not directory.exists() or not directory.is_dir():
             return file_info
         
-        # 收集所有文件
+        # 收集目标路径下的文件
         all_files = []
-        for root, dirs, files in os.walk(directory):
+        
+        for target_path in self.target_paths:
             if self._stop_scan:
                 break
-            for file in files:
-                file_path = Path(root) / file
-                if not self.should_exclude_file(file_path):
-                    relative_path = file_path.relative_to(directory)
-                    all_files.append((file_path, str(relative_path)))
+                
+            target_full_path = directory / target_path
+            
+            if not target_full_path.exists():
+                print(f"目标路径不存在: {target_full_path}")
+                continue
+            
+            if target_full_path.is_file():
+                # 直接是文件
+                relative_path = target_path
+                if not self.should_exclude_file(target_full_path, relative_path):
+                    all_files.append((target_full_path, relative_path))
+            elif target_full_path.is_dir():
+                # 是目录，遍历其中的文件
+                for root, dirs, files in os.walk(target_full_path):
+                    if self._stop_scan:
+                        break
+                    
+                    # 检查当前目录是否在排除列表中
+                    current_relative = Path(root).relative_to(directory)
+                    if any(part in self.exclude_folders for part in current_relative.parts):
+                        dirs.clear()  # 不再遍历子目录
+                        continue
+                    
+                    for file in files:
+                        file_path = Path(root) / file
+                        relative_path = str(file_path.relative_to(directory))
+                        
+                        if not self.should_exclude_file(file_path, relative_path):
+                            all_files.append((file_path, relative_path))
         
         total_files = len(all_files)
         processed = 0
