@@ -11,7 +11,7 @@ from typing import List, Optional
 import difflib
 from datetime import datetime
 
-from ..core.file_comparator import ChangeType
+from core.file_comparator import ChangeType
 
 class DiffViewer:
     """文件差异查看器"""

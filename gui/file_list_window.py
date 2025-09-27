@@ -12,7 +12,7 @@ import difflib
 import zipfile
 from datetime import datetime
 
-from ..core.file_comparator import FileChange, ChangeType
+from core.file_comparator import FileChange, ChangeType
 
 if TYPE_CHECKING:
     from .main_window import IncrementalPackerApp
@@ -138,7 +138,8 @@ class FileListWindow:
         list_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
         # 创建树状表格
-        columns = ("状态", "文件名", "大小")\n        self.tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=20)
+        columns = ("状态", "文件名", "大小")
+        self.tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=20)
         
         # 设置列标题和宽度
         self.tree.heading("状态", text="状态")

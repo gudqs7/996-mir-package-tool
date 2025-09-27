@@ -8,7 +8,7 @@ from tkinter import ttk
 import customtkinter as ctk
 from typing import List, TYPE_CHECKING
 
-from ..core.file_comparator import FileChange, ChangeType
+from core.file_comparator import FileChange, ChangeType
 
 if TYPE_CHECKING:
     from .main_window import IncrementalPackerApp

@@ -10,10 +10,10 @@ from pathlib import Path
 import threading
 from typing import Optional
 
-from ..core.file_scanner import FileScanner
-from ..core.version_manager import VersionManager
-from ..core.package_builder import PackageBuilder
-from ..core.file_comparator import FileComparator, ChangeType
+from core.file_scanner import FileScanner
+from core.version_manager import VersionManager
+from core.package_builder import PackageBuilder
+from core.file_comparator import FileComparator, ChangeType
 
 from .file_list_window import FileListWindow
 from .diff_viewer import DiffViewer
@@ -60,8 +60,8 @@ class IncrementalPackerApp:
         self._setup_events()
         
         # 启动后触发目录变更事件以加载保存的目录
-        if saved_input or saved_output:
-            self._on_directory_changed()
+        # if saved_input or saved_output:
+        #     self._on_directory_changed()
     
     def _setup_ui(self):
         """设置UI界面"""
