@@ -1,6 +1,7 @@
 # 基础依赖
 customtkinter>=5.2.0
 packaging>=21.0
+pyinstaller
 
 # Python 标准库依赖（不需要安装，但标注用于文档）
 # tkinter - Python 内置

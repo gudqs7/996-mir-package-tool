@@ -44,8 +44,6 @@ class ConfigManager:
             "versions": {  # 10个版本的配置
                 str(i): self._version_config_template.copy() for i in range(10)
             },
-            "window_geometry": "800x600",
-            "window_position": "",
             "last_updated": "",
             "scan_filters": {
                 "target_paths": ["Mir200", "DBServer/dbsrc.ini"],
@@ -215,15 +213,7 @@ class ConfigManager:
                 "has_config": bool(config["input_directory"] and config["output_directory"])
             }
         return versions_info
-    
-    def get_window_geometry(self) -> str:
-        """获取窗口几何信息"""
-        return self.get("window_geometry", "800x600")
-    
-    def set_window_geometry(self, geometry: str, auto_save: bool = True):
-        """设置窗口几何信息"""
-        self.set("window_geometry", geometry, auto_save)
-    
+
     def get_scan_filters(self) -> Dict[str, Any]:
         """获取扫描过滤器配置"""
         return self.get("scan_filters", self._default_config["scan_filters"])

@@ -33,7 +33,7 @@ def center_on_screen(win):
     x = int((screen_width - width) // 2)
     y = int((screen_height - height) // 2)
 
-    print(f'screen_width={screen_width} screen_height={screen_height} width={width} height={height}')
-    print(f'+{x}+{y}')
+    # print(f'screen_width={screen_width} screen_height={screen_height} width={width} height={height}')
+    # print(f'+{x}+{y}')
 
     win.geometry(f"+{x}+{y}")

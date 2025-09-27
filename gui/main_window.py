@@ -39,6 +39,7 @@ class IncrementalPackerApp:
     def __init__(self):
         """初始化应用"""
         self.root = ctk.CTk()
+        self.root.iconbitmap('logo.ico')
         self.root.title("996三端母包和增量包工具 by 心累 工具群: 820247699")
         self.root.geometry("700x600")
         # 绑定事件，在窗口显示后自动居中
@@ -96,7 +97,7 @@ class IncrementalPackerApp:
         # 标题
         title_label = ctk.CTkLabel(
             main_frame,
-            text="增量文件打包工具",
+            text="996服务端打包工具",
             font=ctk.CTkFont(size=24, weight="bold")
         )
         title_label.pack(pady=(10, 20))

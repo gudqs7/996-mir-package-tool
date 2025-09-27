@@ -19,7 +19,7 @@ def check_dependencies():
         return False
     
     # 检查必要的包
-    required_packages = ['customtkinter', 'packaging', 'pyinstaller']
+    required_packages = ['customtkinter', 'packaging']
     missing_packages = []
     
     for package in required_packages:
