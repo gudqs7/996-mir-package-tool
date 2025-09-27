@@ -104,26 +104,27 @@ class VersionManager:
         
         return f"v{next_version}"
     
-    def add_version(self, version_str: str, file_info: Dict[str, dict], 
+    def add_version(self, version_str: str, file_info: Dict[str, dict], new_file_info: Dict[str, dict],
                    is_full_package: bool = False, description: str = "") -> VersionInfo:
         """
         添加新版本
         
         Args:
             version_str: 版本号
-            file_info: 文件信息
+            file_info: 最新的所有文件信息
+            new_file_info: 本次版本包含文件信息
             is_full_package: 是否为全量包
             description: 版本描述
             
         Returns:
             版本信息对象
         """
-        total_size = sum(info['size'] for info in file_info.values())
+        total_size = sum(info['size'] for info in new_file_info.values())
         
         version_info = VersionInfo(
             version=version_str,
             timestamp=datetime.now().isoformat(),
-            file_count=len(file_info),
+            file_count=len(new_file_info),
             total_size=total_size,
             is_full_package=is_full_package,
             description=description

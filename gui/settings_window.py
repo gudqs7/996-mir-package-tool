@@ -274,7 +274,7 @@ class SettingsWindow:
                     self.app.file_changes = []
                     self.app.current_file_info = {}
                     self.app.view_changes_btn.configure(state="disabled")
-                    self.app.incremental_btn.configure(state="disabled")
+                    self.app.package_btn.configure(state="disabled")
                     self.app.full_btn.configure(state="disabled")
                     self.app.status_text.set("缓存已清理，请重新扫描文件")
                 

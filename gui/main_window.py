@@ -221,34 +221,27 @@ class IncrementalPackerApp:
         )
         self.view_changes_btn.pack(side="left", padx=5)
 
-        # ctk.CTkButton(
-        #     row1_frame,
-        #     text="设置",
-        #     width=80,
-        #     command=self._show_settings
-        # ).pack(side="right", padx=5)
-
         # 第二行按钮
         row2_frame = ctk.CTkFrame(action_frame)
         row2_frame.pack(fill="x", padx=5, pady=5)
 
-        self.incremental_btn = ctk.CTkButton(
+        self.package_btn = ctk.CTkButton(
             row2_frame,
-            text="增量打包",
+            text="开始打包",
             width=120,
-            command=self._start_incremental_package,
+            command=self._start_package_auto,
             state="disabled"
         )
-        self.incremental_btn.pack(side="left", padx=5)
+        self.package_btn.pack(side="left", padx=5)
 
-        self.full_btn = ctk.CTkButton(
-            row2_frame,
-            text="全量打包",
-            width=120,
-            command=self._start_full_package,
-            state="disabled"
-        )
-        self.full_btn.pack(side="left", padx=5)
+        # self.full_btn = ctk.CTkButton(
+        #     row2_frame,
+        #     text="全量打包",
+        #     width=120,
+        #     command=self._start_full_package,
+        #     state="disabled"
+        # )
+        # self.full_btn.pack(side="left", padx=5)
 
         self.reset_btn = ctk.CTkButton(
             row2_frame,
@@ -334,7 +327,7 @@ class IncrementalPackerApp:
     def _switch_to_version(self, version_index: int):
         """切换到指定版本"""
         try:
-            # 保存当前版本的配置
+            # 保存前一个版本的配置
             self._save_current_config()
 
             # 更新配置管理器的当前版本索引
@@ -349,9 +342,6 @@ class IncrementalPackerApp:
 
             # 触发目录变更事件来更新其他组件
             self._on_directory_changed()
-
-            self.status_text.set(f"已切换到版本 {version_index + 1}")
-
         except Exception as e:
             print(f"切换版本失败: {e}")
             self.status_text.set(f"切换版本失败: {e}")
@@ -373,6 +363,8 @@ class IncrementalPackerApp:
         """目录变更事件处理"""
         # 保存配置
         self._save_current_config()
+        self.view_changes_btn.configure(state="disabled")
+        self.package_btn.configure(state="disabled")
 
         if self.input_dir.get() and self.output_dir.get():
             # 初始化版本管理器（使用输出目录下的cache）
@@ -393,9 +385,12 @@ class IncrementalPackerApp:
 
             # 启用扫描按钮
             self.scan_btn.configure(state="normal")
+            self.reset_btn.configure(state="normal")
             self.status_text.set("就绪，请点击'扫描文件'开始")
         else:
+            self.current_version.set("v1.0.0")
             self.scan_btn.configure(state="disabled")
+            self.reset_btn.configure(state="disabled")
             self.status_text.set("请选择输入和输出目录")
 
     def _start_scan(self):
@@ -467,7 +462,7 @@ class IncrementalPackerApp:
         self.progress_bar.set(1.0)
 
         # 更新状态
-        change_count = len([c for c in changes if c.change_type != ChangeType.DELETED])
+        change_count = len(changes)
         if change_count == 0:
             self.status_text.set("扫描完成，没有发现文件变化")
             self.progress_label.configure(text=f"扫描完成: 总计 {len(file_info)} 个文件，无变化")
@@ -500,21 +495,12 @@ class IncrementalPackerApp:
     def _disable_actions(self):
         """禁用操作按钮"""
         self.view_changes_btn.configure(state="disabled")
-        self.incremental_btn.configure(state="disabled")
-        self.full_btn.configure(state="disabled")
+        self.package_btn.configure(state="disabled")
         self.reset_btn.configure(state="disabled")
 
     def _enable_actions(self):
         """启用操作按钮"""
-        if self.current_file_info:
-            self.full_btn.configure(state="normal")
-
-            # 只有当有变化时才启用增量打包
-            if self.file_changes:
-                change_count = len([c for c in self.file_changes if c.change_type != ChangeType.DELETED])
-                if change_count > 0:
-                    self.incremental_btn.configure(state="normal")
-
+        self.package_btn.configure(state="normal")
         self.reset_btn.configure(state="normal")
 
     def _view_file_changes(self):
@@ -528,6 +514,13 @@ class IncrementalPackerApp:
 
         self.file_list_window.show_changes(self.file_changes)
         self.file_list_window.window.lift()
+
+    def _start_package_auto(self):
+        version = self.current_version.get()
+        if version=='v1.0.0':
+            self._start_full_package()
+        else:
+            self._start_incremental_package()
 
     def _start_incremental_package(self):
         """开始增量打包"""
@@ -604,9 +597,13 @@ class IncrementalPackerApp:
             )
 
             if success:
+                new_file_info = {}
+                for key in self.current_file_info:
+                    if key in files_to_package:
+                        new_file_info[key] = self.current_file_info[key]
                 # 保存版本信息
                 self.version_manager.add_version(
-                    version, self.current_file_info, is_full,
+                    version, self.current_file_info, new_file_info,is_full,
                     f"{package_type}包"
                 )
 
@@ -639,10 +636,15 @@ class IncrementalPackerApp:
         # 显示结果
         package_info = self.package_builder.get_package_info(package_file)
         if package_info:
-            size_mb = package_info['compressed_size'] / (1024 * 1024)
+            size_kb = package_info['compressed_size'] / 1024
+            size_info = f'{size_kb:.2f} KB'
+            if size_kb > 1024:
+                size_mb = size_kb / 1024
+                size_info = f'{size_mb:.2f} MB'
+
             message = f"{package_type}包创建成功!\n" \
                       f"文件: {package_file.name}\n" \
-                      f"大小: {size_mb:.2f} MB\n" \
+                      f"大小: {size_info}\n" \
                       f"文件数: {package_info['file_count']}"
             messagebox.showinfo("成功", message)
             self.status_text.set(f"{package_type}包创建成功: {package_file.name}")
@@ -680,7 +682,7 @@ class IncrementalPackerApp:
                 self.file_changes = []
                 self.current_file_info = {}
                 self.view_changes_btn.configure(state="disabled")
-                self.incremental_btn.configure(state="disabled")
+                self.package_btn.configure(state="disabled")
                 self.full_btn.configure(state="disabled")
                 self.status_text.set("版本已重置，请重新扫描文件")
 
@@ -708,20 +710,24 @@ class IncrementalPackerApp:
 
         for col in columns:
             tree.heading(col, text=col)
-            tree.column(col, width=70, anchor="center")
+            tree.column(col, width=60, anchor="center")
 
-        tree.column("时间", width=150)
+        tree.column("时间", width=160)
 
         # 添加数据
         for version in versions:
-            size_mb = version.total_size / (1024 * 1024)
+            size_kb = version.total_size / 1024
+            size_info = f'{size_kb:.2f} KB'
+            if size_kb > 1024:
+                size_mb = size_kb / 1024
+                size_info = f'{size_mb:.2f} MB'
             package_type = "全量" if version.is_full_package else "增量"
             tree.insert("", "end", values=(
                 version.version,
                 version.timestamp[:19].replace("T", " "),
                 package_type,
                 version.file_count,
-                f"{size_mb:.2f} MB"
+                f"{size_info}"
             ))
 
         tree.pack(fill="both", expand=True, padx=10, pady=10)

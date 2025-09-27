@@ -28,10 +28,10 @@ class FileScanner:
             exclude_extensions: 需要排除的文件扩展名列表
         """
         # 只扫描指定的路径
-        self.target_paths = target_paths or ["Mir200", "DBServer/dbsrc.ini"]
+        self.target_paths = target_paths or ["Mir200", "DBServer\\dbsrc.ini"]
         
         # 排除的具体文件
-        self.exclude_files = set(exclude_files or ["Mir200/M2Server.map", "Mir200/GlobalVal.ini"])
+        self.exclude_files = set(exclude_files or ["Mir200\\M2Server.map", "Mir200\\GlobalVal.ini"])
         
         # 排除的文件夹
         self.exclude_folders = set(exclude_folders or ["Log"])
