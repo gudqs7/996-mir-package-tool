@@ -47,9 +47,10 @@ class FileListWindow:
         # 创建窗口
         self.window = ctk.CTkToplevel()
         self.window.title("文件变更详情")
+        self.window.grab_set()
 
         # 设置窗口居中和合理大小
-        self.window.geometry("1200x800")
+        self.window.geometry("1500x900")
         self.window.minsize(1200, 800)
         center_on_screen(self.window)
 
@@ -113,7 +114,7 @@ class FileListWindow:
         """设置左侧文件列表"""
         left_frame = ctk.CTkFrame(parent)
         left_frame.pack(side="left", fill="both", expand=False, padx=5, pady=5)
-        left_frame.configure(width=450)
+        left_frame.configure(width=320)
 
         # 列表标题
         list_title = ctk.CTkLabel(
@@ -153,30 +154,16 @@ class FileListWindow:
         list_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
         # 创建树状表格 - 修复：不设置show="headings"，这样可以使用第0列
-
-        # 设置表格内容的字体
-        style = ttk.Style()
-        style.configure("Treeview",
-                        font=("微软雅黑", 14),
-                        rowheight=35)
-        # 设置表头的字体
-        style.configure("Treeview.Heading",
-                        font=("微软雅黑", 16, "bold"),
-                        rowheight=45)
-        columns = ("状态", "文件名", "大小")
+        columns = ("状态")
         self.tree = ttk.Treeview(list_frame, columns=columns, height=20)
 
         # 设置列标题和宽度
         self.tree.heading("#0", text="路径", anchor="w")
         self.tree.heading("状态", text="状态")
-        self.tree.heading("文件名", text="文件名")
-        self.tree.heading("大小", text="大小变化")
 
         # 设置列宽度
-        self.tree.column("#0", width=200, anchor="w")
-        self.tree.column("状态", width=60, anchor="center")
-        self.tree.column("文件名", width=150, anchor="w")
-        self.tree.column("大小", width=80, anchor="center")
+        self.tree.column("#0", width=330, anchor="w")
+        self.tree.column("状态", width=10, anchor="center")
 
         # 添加滚动条
         scrollbar_y = ctk.CTkScrollbar(list_frame, orientation="vertical", command=self.tree.yview)
@@ -223,26 +210,15 @@ class FileListWindow:
         diff_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
         # 创建文本框显示差异
-        # self.diff_text = scrolledtext.ScrolledText(
-        #     diff_frame,
-        #     wrap=tk.NONE,
-        #     font=("等线", 16),
-        #     bg="#ffffff",  # 白色背景
-        #     fg="#000000",  # 黑色文字
-        #     insertbackground="black",
-        #     selectbackground="#0078d4",
-        #     state="disabled",
-        #     height=25
-        # )
         self.diff_text = tk.Text(
             diff_frame,
             wrap="none",
-            font=("等线", 16),
+            font=("微软雅黑", 12),
             bg="#ffffff",  # 白色背景
             fg="#000000",  # 黑色文字
-            insertbackground="black",
-            selectbackground="#0078d4",
-            state="disabled",
+            insertbackground="white",  # 光标颜色
+            selectbackground="#1f6aa5",  # 选中文本背景色
+        state="disabled",
         )
         self.diff_text.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -276,11 +252,11 @@ class FileListWindow:
     def _setup_text_tags(self):
         """设置文本标签样式"""
         # 添加行标记
-        self.diff_text.tag_configure("added", background="#e6ffed", foreground="#22863a")
-        self.diff_text.tag_configure("removed", background="#ffeef0", foreground="#d73a49")
-        self.diff_text.tag_configure("context", background="#ffffff", foreground="#586069")
-        self.diff_text.tag_configure("header", background="#f1f8ff", foreground="#0366d6", font=("等线", 18, "bold"))
-        self.diff_text.tag_configure("info", background="#fff5b4", foreground="#735c0f", font=("等线", 18, "bold"))
+        self.diff_text.tag_configure("added", background="#e6ffed", foreground="#22863a",selectbackground="#1f6aa5")
+        self.diff_text.tag_configure("removed", background="#ffeef0", foreground="#d73a49",selectbackground="#1f6aa5")
+        self.diff_text.tag_configure("context", background="#ffffff", foreground="#333333",selectbackground="#1f6aa5")
+        self.diff_text.tag_configure("header", background="#f1f8ff", foreground="#0366d6",selectbackground="#1f6aa5", font=("微软雅黑", 12, "bold"))
+        self.diff_text.tag_configure("info", background="#fff5b4", foreground="#735c0f",selectbackground="#1f6aa5", font=("微软雅黑", 12, "bold"))
 
     def _setup_events(self):
         """设置事件处理"""

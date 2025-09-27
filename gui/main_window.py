@@ -19,31 +19,14 @@ from core.config_manager import ConfigManager
 from gui.file_list_window import FileListWindow
 from gui.diff_viewer import DiffViewer
 from gui.settings_window import SettingsWindow
-from core.make_win_center import center_on_screen
-
-
-def get_windows_scaling_simple():
-    """简化的Windows缩放检测"""
-    try:
-        # 设置DPI感知
-        ctypes.windll.user32.SetProcessDPIAware()
-
-        # 获取系统DPI
-        hdc = ctypes.windll.user32.GetDC(0)
-        dpi = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)  # LOGPIXELSX
-        ctypes.windll.user32.ReleaseDC(0, hdc)
-
-        return dpi / 96.0
-    except:
-        return 1.0
-
+from core.make_win_center import center_on_screen, get_windows_scaling_simple
 
 # 在CustomTkinter中使用
 scaling = get_windows_scaling_simple()
 
 # 设置CustomTkinter缩放
-ctk.set_widget_scaling(scaling)  # 控件缩放
-ctk.set_window_scaling(scaling)  # 窗口缩放
+# ctk.set_widget_scaling(scaling)  # 控件缩放
+# ctk.set_window_scaling(scaling)  # 窗口缩放
 
 # 设置主题
 ctk.set_appearance_mode("Dark")  # 系统模式
@@ -58,19 +41,18 @@ class IncrementalPackerApp:
         self.root = ctk.CTk()
         self.root.title("996三端母包和增量包工具 by 心累 工具群: 820247699")
         self.root.geometry("700x600")
-        self.root.minsize(700, 600)
         # 绑定事件，在窗口显示后自动居中
         center_on_screen(self.root)
 
         # 设置表格内容的字体
         style = ttk.Style()
         style.configure("Treeview",
-                        font=("微软雅黑", 14),
-                        rowheight=35)
+                        font=("微软雅黑", 12),
+                        rowheight=30)
         # 设置表头的字体
         style.configure("Treeview.Heading",
-                        font=("微软雅黑", 16, "bold"),
-                        rowheight=45)
+                        font=("微软雅黑", 14, "bold"),
+                        rowheight=35)
 
         # 配置管理器（先初始化）
         self.config = ConfigManager()
@@ -239,12 +221,12 @@ class IncrementalPackerApp:
         )
         self.view_changes_btn.pack(side="left", padx=5)
 
-        ctk.CTkButton(
-            row1_frame,
-            text="设置",
-            width=80,
-            command=self._show_settings
-        ).pack(side="right", padx=5)
+        # ctk.CTkButton(
+        #     row1_frame,
+        #     text="设置",
+        #     width=80,
+        #     command=self._show_settings
+        # ).pack(side="right", padx=5)
 
         # 第二行按钮
         row2_frame = ctk.CTkFrame(action_frame)
@@ -716,8 +698,9 @@ class IncrementalPackerApp:
         # 创建版本历史窗口
         history_window = ctk.CTkToplevel()
         history_window.title("版本历史")
-        history_window.geometry("400x300")
-        history_window.minsize(400, 300)
+        history_window.geometry("600x450")
+        history_window.grab_set()
+        center_on_screen(history_window)
 
         # 创建树状表格
         columns = ("版本", "时间", "类型", "文件数", "大小")
@@ -762,10 +745,6 @@ class IncrementalPackerApp:
         """窗口关闭事件"""
         # 在退出前保存配置
         self._save_current_config()
-
-        # 保存窗口几何信息
-        geometry = self.root.geometry()
-        self.config.set_window_geometry(geometry)
 
         # 停止所有正在进行的操作
         if self.is_scanning:
