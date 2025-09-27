@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+# -*- coding: gbk -*-
 """
-åŒåˆ—æ–‡ä»¶å˜æ›´æŸ¥çœ‹çª—å£
+Ë«ÁĞÎÄ¼ş±ä¸ü²é¿´´°¿Ú
 """
 
 import tkinter as tk
@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Optional, TYPE_CHECKING, Dict
 import difflib
 import zipfile
-from datetime import datetime
+from core.make_win_center import center_on_screen
 
 from core.file_comparator import FileChange, ChangeType
 from core.file_cache_manager import FileCacheManager
@@ -18,139 +18,127 @@ from core.file_cache_manager import FileCacheManager
 if TYPE_CHECKING:
     from .main_window import IncrementalPackerApp
 
+
 class FileListWindow:
-    """åŒåˆ—æ–‡ä»¶å˜æ›´æŸ¥çœ‹çª—å£"""
-    
+    """Ë«ÁĞÎÄ¼ş±ä¸ü²é¿´´°¿Ú"""
+
     def __init__(self, parent, app: 'IncrementalPackerApp'):
         """
-        åˆå§‹åŒ–æ–‡ä»¶åˆ—è¡¨çª—å£
+        ³õÊ¼»¯ÎÄ¼şÁĞ±í´°¿Ú
         
         Args:
-            parent: çˆ¶çª—å£
-            app: ä¸»åº”ç”¨å®ä¾‹
+            parent: ¸¸´°¿Ú
+            app: Ö÷Ó¦ÓÃÊµÀı
         """
         self.app = app
         self.changes: List[FileChange] = []
         self.selected_change: Optional[FileChange] = None
-        self.item_to_change: Dict[str, FileChange] = {}  # å­˜å‚¨tree itemåˆ°changeå¯¹è±¡çš„æ˜ å°„
-        
-        # ä½¿ç”¨åŸºäºè¾“å‡ºç›®å½•çš„ç¼“å­˜ç®¡ç†å™¨
+        self.item_to_change: Dict[str, FileChange] = {}  # ´æ´¢tree itemµ½change¶ÔÏóµÄÓ³Éä
+
+        # Ê¹ÓÃ»ùÓÚÊä³öÄ¿Â¼µÄ»º´æ¹ÜÀíÆ÷
         output_dir = app.output_dir.get()
         if output_dir:
             from pathlib import Path
             self.cache_manager = FileCacheManager.create_for_output_dir(Path(output_dir))
         else:
-            # å¦‚æœæ²¡æœ‰è¾“å‡ºç›®å½•ï¼Œä½¿ç”¨é»˜è®¤ç¼“å­˜
+            # Èç¹ûÃ»ÓĞÊä³öÄ¿Â¼£¬Ê¹ÓÃÄ¬ÈÏ»º´æ
             self.cache_manager = FileCacheManager()
-        
-        # åˆ›å»ºçª—å£
-        self.window = tk.Toplevel(parent)
-        self.window.title("æ–‡ä»¶å˜æ›´è¯¦æƒ…")
-        
-        # è®¾ç½®çª—å£å±…ä¸­å’Œåˆç†å¤§å°
-        self._center_window(1400, 900)
-        self.window.transient(parent)
-        self.window.grab_set()  # æ¨¡æ€çª—å£
-        
+
+        # ´´½¨´°¿Ú
+        self.window = ctk.CTkToplevel()
+        self.window.title("ÎÄ¼ş±ä¸üÏêÇé")
+
+        # ÉèÖÃ´°¿Ú¾ÓÖĞºÍºÏÀí´óĞ¡
+        self.window.geometry("1200x800")
+        self.window.minsize(1200, 800)
+        center_on_screen(self.window)
+
         self._setup_ui()
         self._setup_events()
-    
-    def _center_window(self, width, height):
-        """å°†çª—å£å±…ä¸­æ˜¾ç¤º"""
-        # è·å–å±å¹•å°ºå¯¸
-        screen_width = self.window.winfo_screenwidth()
-        screen_height = self.window.winfo_screenheight()
-        
-        # è®¡ç®—ä½ç½®
-        x = (screen_width - width) // 2
-        y = (screen_height - height) // 2
-        
-        self.window.geometry(f"{width}x{height}+{x}+{y}")
-        self.window.minsize(1000, 600)  # è®¾ç½®æœ€å°å°ºå¯¸
-    
+
     def _setup_ui(self):
-        """è®¾ç½®UIç•Œé¢"""
-        # ä¸»æ¡†æ¶
+        """ÉèÖÃUI½çÃæ"""
+        # Ö÷¿ò¼Ü
         main_frame = ctk.CTkFrame(self.window)
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # æ ‡é¢˜åŒºåŸŸ
+
+        # ±êÌâÇøÓò
         title_frame = ctk.CTkFrame(main_frame)
         title_frame.pack(fill="x", padx=10, pady=(10, 5))
-        
+
         title_label = ctk.CTkLabel(
             title_frame,
-            text="æ–‡ä»¶å˜æ›´è¯¦æƒ…",
+            text="ÎÄ¼ş±ä¸üÏêÇé",
             font=ctk.CTkFont(size=20, weight="bold")
         )
         title_label.pack(side="left", padx=10, pady=10)
-        
-        # ç»Ÿè®¡ä¿¡æ¯
+
+        # Í³¼ÆĞÅÏ¢
         self.stats_label = ctk.CTkLabel(title_frame, text="")
         self.stats_label.pack(side="right", padx=10, pady=10)
-        
-        # ä¸»å†…å®¹åŒºåŸŸï¼ˆåŒåˆ—å¸ƒå±€ï¼‰
+
+        # Ö÷ÄÚÈİÇøÓò£¨Ë«ÁĞ²¼¾Ö£©
         content_frame = ctk.CTkFrame(main_frame)
         content_frame.pack(fill="both", expand=True, padx=10, pady=5)
-        
-        # å·¦ä¾§æ–‡ä»¶åˆ—è¡¨
+
+        # ×ó²àÎÄ¼şÁĞ±í
         self._setup_file_list(content_frame)
-        
-        # åˆ†éš”ç¬¦
+
+        # ·Ö¸ô·û
         separator = ttk.Separator(content_frame, orient="vertical")
         separator.pack(side="left", fill="y", padx=5)
-        
-        # å³ä¾§å·®å¼‚æ˜¾ç¤º
+
+        # ÓÒ²à²îÒìÏÔÊ¾
         self._setup_diff_view(content_frame)
-        
-        # åº•éƒ¨æŒ‰é’®åŒºåŸŸ
+
+        # µ×²¿°´Å¥ÇøÓò
         button_frame = ctk.CTkFrame(main_frame)
         button_frame.pack(fill="x", padx=10, pady=5)
-        
+
         ctk.CTkButton(
             button_frame,
-            text="åˆ·æ–°",
+            text="Ë¢ĞÂ",
             command=self._refresh_diff,
             width=80
         ).pack(side="left", padx=5)
-        
+
         ctk.CTkButton(
             button_frame,
-            text="å…³é—­",
+            text="¹Ø±Õ",
             command=self.window.destroy,
             width=80
         ).pack(side="right", padx=5)
-    
+
     def _setup_file_list(self, parent):
-        """è®¾ç½®å·¦ä¾§æ–‡ä»¶åˆ—è¡¨"""
+        """ÉèÖÃ×ó²àÎÄ¼şÁĞ±í"""
         left_frame = ctk.CTkFrame(parent)
         left_frame.pack(side="left", fill="both", expand=False, padx=5, pady=5)
         left_frame.configure(width=450)
-        
-        # åˆ—è¡¨æ ‡é¢˜
+
+        # ÁĞ±í±êÌâ
         list_title = ctk.CTkLabel(
             left_frame,
-            text="å˜æ›´æ–‡ä»¶åˆ—è¡¨",
+            text="±ä¸üÎÄ¼şÁĞ±í",
             font=ctk.CTkFont(size=16, weight="bold")
         )
         list_title.pack(pady=(10, 5))
-        
-        # è¿‡æ»¤æ¡†æ¶
+
+        # ¹ıÂË¿ò¼Ü
         filter_frame = ctk.CTkFrame(left_frame)
         filter_frame.pack(fill="x", padx=10, pady=5)
-        
-        ctk.CTkLabel(filter_frame, text="è¿‡æ»¤:").pack(side="left", padx=5)
-        
+
+        ctk.CTkLabel(filter_frame, text="¹ıÂË:").pack(side="left", padx=5)
+
         self.filter_var = tk.StringVar(value="all")
-        
-        # è¿‡æ»¤é€‰é¡¹
+
+        # ¹ıÂËÑ¡Ïî
         filter_options = [
-            ("å…¨éƒ¨", "all"),
-            ("æ–°å¢", "added"),
-            ("ä¿®æ”¹", "modified"),
-            ("åˆ é™¤", "deleted")
+            ("È«²¿", "all"),
+            ("ĞÂÔö", "added"),
+            ("ĞŞ¸Ä", "modified"),
+            ("É¾³ı", "deleted")
         ]
-        
+
         for text, value in filter_options:
             ctk.CTkRadioButton(
                 filter_frame,
@@ -158,174 +146,215 @@ class FileListWindow:
                 variable=self.filter_var,
                 value=value,
                 command=self._apply_filter
-            ).pack(side="left", padx=5)
-        
-        # æ–‡ä»¶åˆ—è¡¨æ¡†
+            ).pack(side="left", padx=0)
+
+        # ÎÄ¼şÁĞ±í¿ò
         list_frame = ctk.CTkFrame(left_frame)
         list_frame.pack(fill="both", expand=True, padx=10, pady=5)
-        
-        # åˆ›å»ºæ ‘çŠ¶è¡¨æ ¼ - ä¿®å¤ï¼šä¸è®¾ç½®show="headings"ï¼Œè¿™æ ·å¯ä»¥ä½¿ç”¨ç¬¬0åˆ—
-        columns = ("çŠ¶æ€", "æ–‡ä»¶å", "å¤§å°")
+
+        # ´´½¨Ê÷×´±í¸ñ - ĞŞ¸´£º²»ÉèÖÃshow="headings"£¬ÕâÑù¿ÉÒÔÊ¹ÓÃµÚ0ÁĞ
+
+        # ÉèÖÃ±í¸ñÄÚÈİµÄ×ÖÌå
+        style = ttk.Style()
+        style.configure("Treeview",
+                        font=("Î¢ÈíÑÅºÚ", 14),
+                        rowheight=35)
+        # ÉèÖÃ±íÍ·µÄ×ÖÌå
+        style.configure("Treeview.Heading",
+                        font=("Î¢ÈíÑÅºÚ", 16, "bold"),
+                        rowheight=45)
+        columns = ("×´Ì¬", "ÎÄ¼şÃû", "´óĞ¡")
         self.tree = ttk.Treeview(list_frame, columns=columns, height=20)
-        
-        # è®¾ç½®åˆ—æ ‡é¢˜å’Œå®½åº¦
-        self.tree.heading("#0", text="è·¯å¾„", anchor="w")
-        self.tree.heading("çŠ¶æ€", text="çŠ¶æ€")
-        self.tree.heading("æ–‡ä»¶å", text="æ–‡ä»¶å")  
-        self.tree.heading("å¤§å°", text="å¤§å°å˜åŒ–")
-        
-        # è®¾ç½®åˆ—å®½åº¦
+
+        # ÉèÖÃÁĞ±êÌâºÍ¿í¶È
+        self.tree.heading("#0", text="Â·¾¶", anchor="w")
+        self.tree.heading("×´Ì¬", text="×´Ì¬")
+        self.tree.heading("ÎÄ¼şÃû", text="ÎÄ¼şÃû")
+        self.tree.heading("´óĞ¡", text="´óĞ¡±ä»¯")
+
+        # ÉèÖÃÁĞ¿í¶È
         self.tree.column("#0", width=200, anchor="w")
-        self.tree.column("çŠ¶æ€", width=60, anchor="center")
-        self.tree.column("æ–‡ä»¶å", width=150, anchor="w")
-        self.tree.column("å¤§å°", width=80, anchor="center")
-        
-        # æ·»åŠ æ»šåŠ¨æ¡
-        scrollbar_y = ttk.Scrollbar(list_frame, orient="vertical", command=self.tree.yview)
-        scrollbar_x = ttk.Scrollbar(list_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.column("×´Ì¬", width=60, anchor="center")
+        self.tree.column("ÎÄ¼şÃû", width=150, anchor="w")
+        self.tree.column("´óĞ¡", width=80, anchor="center")
+
+        # Ìí¼Ó¹ö¶¯Ìõ
+        scrollbar_y = ctk.CTkScrollbar(list_frame, orientation="vertical", command=self.tree.yview)
+        scrollbar_x = ctk.CTkScrollbar(list_frame, orientation="horizontal", command=self.tree.xview)
         self.tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
-        
-        # å¸ƒå±€
+
+        # ²¼¾Ö
         self.tree.grid(row=0, column=0, sticky="nsew")
         scrollbar_y.grid(row=0, column=1, sticky="ns")
         scrollbar_x.grid(row=1, column=0, sticky="ew")
-        
-        # é…ç½®gridæƒé‡
+
+        # ÅäÖÃgridÈ¨ÖØ
         list_frame.grid_rowconfigure(0, weight=1)
         list_frame.grid_columnconfigure(0, weight=1)
-        
-        # é˜»æ­¢å·¦ä¾§æ¡†æ¶æ”¶ç¼©
+
+        # ×èÖ¹×ó²à¿ò¼ÜÊÕËõ
         left_frame.pack_propagate(False)
-    
+
     def _setup_diff_view(self, parent):
-        """è®¾ç½®å³ä¾§å·®å¼‚æ˜¾ç¤º"""
+        """ÉèÖÃÓÒ²à²îÒìÏÔÊ¾"""
         right_frame = ctk.CTkFrame(parent)
         right_frame.pack(side="right", fill="both", expand=True, padx=5, pady=5)
-        
-        # å·®å¼‚æ˜¾ç¤ºæ ‡é¢˜
+
+        # ²îÒìÏÔÊ¾±êÌâ
         diff_title_frame = ctk.CTkFrame(right_frame)
         diff_title_frame.pack(fill="x", padx=10, pady=(10, 5))
-        
+
         self.diff_title_label = ctk.CTkLabel(
             diff_title_frame,
-            text="å†…å®¹å¯¹æ¯”",
+            text="ÄÚÈİ¶Ô±È",
             font=ctk.CTkFont(size=16, weight="bold")
         )
         self.diff_title_label.pack(side="left", padx=10, pady=5)
-        
+
         self.file_path_label = ctk.CTkLabel(
             diff_title_frame,
             text="",
             font=ctk.CTkFont(size=12)
         )
         self.file_path_label.pack(side="left", padx=10, pady=5)
-        
-        # å·®å¼‚æ˜¾ç¤ºåŒºåŸŸ
+
+        # ²îÒìÏÔÊ¾ÇøÓò
         diff_frame = ctk.CTkFrame(right_frame)
         diff_frame.pack(fill="both", expand=True, padx=10, pady=5)
-        
-        # åˆ›å»ºæ–‡æœ¬æ¡†æ˜¾ç¤ºå·®å¼‚
-        self.diff_text = scrolledtext.ScrolledText(
+
+        # ´´½¨ÎÄ±¾¿òÏÔÊ¾²îÒì
+        # self.diff_text = scrolledtext.ScrolledText(
+        #     diff_frame,
+        #     wrap=tk.NONE,
+        #     font=("µÈÏß", 16),
+        #     bg="#ffffff",  # °×É«±³¾°
+        #     fg="#000000",  # ºÚÉ«ÎÄ×Ö
+        #     insertbackground="black",
+        #     selectbackground="#0078d4",
+        #     state="disabled",
+        #     height=25
+        # )
+        self.diff_text = tk.Text(
             diff_frame,
-            wrap=tk.NONE,
-            font=("ç­‰çº¿", 14),
-            bg="#ffffff",  # ç™½è‰²èƒŒæ™¯
-            fg="#000000",  # é»‘è‰²æ–‡å­—
+            wrap="none",
+            font=("µÈÏß", 16),
+            bg="#ffffff",  # °×É«±³¾°
+            fg="#000000",  # ºÚÉ«ÎÄ×Ö
             insertbackground="black",
             selectbackground="#0078d4",
             state="disabled",
-            height=25
         )
         self.diff_text.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # è®¾ç½®æ–‡æœ¬æ ‡ç­¾æ ·å¼ï¼ˆç±»ä¼¼VSCodeçš„git diffï¼‰
+
+        # ´´½¨´¹Ö±¹ö¶¯Ìõ
+        self.v_scrollbar = ctk.CTkScrollbar(diff_frame, orientation="vertical")
+        self.v_scrollbar.configure(command=self.diff_text.yview)
+
+        # ´´½¨Ë®Æ½¹ö¶¯Ìõ
+        self.h_scrollbar = ctk.CTkScrollbar(diff_frame, orientation="horizontal")
+        self.h_scrollbar.configure(command=self.diff_text.xview)
+
+        # ÅäÖÃÎÄ±¾ÇøÓòµÄ¹ö¶¯ÃüÁî
+        self.diff_text.configure(
+            yscrollcommand=self.v_scrollbar.set,
+            xscrollcommand=self.h_scrollbar.set
+        )
+
+        # Ê¹ÓÃgrid²¼¾ÖÈ·±£¹ö¶¯ÌõÕıÈ··ÅÖÃ
+        self.diff_text.grid(row=0, column=0, sticky="nsew")
+        self.v_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.h_scrollbar.grid(row=1, column=0, sticky="ew")
+        diff_frame.grid_rowconfigure(0, weight=1)
+        diff_frame.grid_columnconfigure(0, weight=1)
+
+        # ÉèÖÃÎÄ±¾±êÇ©ÑùÊ½£¨ÀàËÆVSCodeµÄgit diff£©
         self._setup_text_tags()
-        
-        # é»˜è®¤æ˜¾ç¤ºæç¤ºä¿¡æ¯
+
+        # Ä¬ÈÏÏÔÊ¾ÌáÊ¾ĞÅÏ¢
         self._show_default_message()
-    
+
     def _setup_text_tags(self):
-        """è®¾ç½®æ–‡æœ¬æ ‡ç­¾æ ·å¼"""
-        # æ·»åŠ è¡Œæ ‡è®°
+        """ÉèÖÃÎÄ±¾±êÇ©ÑùÊ½"""
+        # Ìí¼ÓĞĞ±ê¼Ç
         self.diff_text.tag_configure("added", background="#e6ffed", foreground="#22863a")
         self.diff_text.tag_configure("removed", background="#ffeef0", foreground="#d73a49")
         self.diff_text.tag_configure("context", background="#ffffff", foreground="#586069")
-        self.diff_text.tag_configure("header", background="#f1f8ff", foreground="#0366d6", font=("ç­‰çº¿", 16, "bold"))
-        self.diff_text.tag_configure("info", background="#fff5b4", foreground="#735c0f")
-    
+        self.diff_text.tag_configure("header", background="#f1f8ff", foreground="#0366d6", font=("µÈÏß", 18, "bold"))
+        self.diff_text.tag_configure("info", background="#fff5b4", foreground="#735c0f", font=("µÈÏß", 18, "bold"))
+
     def _setup_events(self):
-        """è®¾ç½®äº‹ä»¶å¤„ç†"""
-        # é€‰æ‹©äº‹ä»¶
+        """ÉèÖÃÊÂ¼ş´¦Àí"""
+        # Ñ¡ÔñÊÂ¼ş
         self.tree.bind("<<TreeviewSelect>>", self._on_selection_changed)
-        
-        # åŒå‡»äº‹ä»¶
+
+        # Ë«»÷ÊÂ¼ş
         self.tree.bind("<Double-1>", self._on_double_click)
-    
+
     def show_changes(self, changes: List[FileChange]):
         """
-        æ˜¾ç¤ºæ–‡ä»¶å˜æ›´
+        ÏÔÊ¾ÎÄ¼ş±ä¸ü
         
         Args:
-            changes: æ–‡ä»¶å˜æ›´åˆ—è¡¨
+            changes: ÎÄ¼ş±ä¸üÁĞ±í
         """
         self.changes = changes
         self._update_stats()
         self._populate_tree()
         self._show_default_message()
-        
-        # æ˜¾ç¤ºçª—å£
+
+        # ÏÔÊ¾´°¿Ú
         self.window.deiconify()
         self.window.focus()
-    
+
     def _update_stats(self):
-        """æ›´æ–°ç»Ÿè®¡ä¿¡æ¯"""
+        """¸üĞÂÍ³¼ÆĞÅÏ¢"""
         added_count = len([c for c in self.changes if c.change_type == ChangeType.ADDED])
         modified_count = len([c for c in self.changes if c.change_type == ChangeType.MODIFIED])
         deleted_count = len([c for c in self.changes if c.change_type == ChangeType.DELETED])
-        
-        stats_text = f"æ–°å¢: {added_count} | ä¿®æ”¹: {modified_count} | åˆ é™¤: {deleted_count}"
+
+        stats_text = f"ĞÂÔö: {added_count} | ĞŞ¸Ä: {modified_count} | É¾³ı: {deleted_count}"
         self.stats_label.configure(text=stats_text)
-    
+
     def _populate_tree(self):
-        """å¡«å……æ–‡ä»¶åˆ—è¡¨"""
-        # æ¸…ç©ºç°æœ‰æ•°æ®
+        """Ìî³äÎÄ¼şÁĞ±í"""
+        # Çå¿ÕÏÖÓĞÊı¾İ
         for item in self.tree.get_children():
             self.tree.delete(item)
-        
-        # æ¸…ç©ºæ˜ å°„å­—å…¸
+
+        # Çå¿ÕÓ³Éä×Öµä
         self.item_to_change.clear()
-        
-        # æ ¹æ®è¿‡æ»¤æ¡ä»¶è·å–æ•°æ®
+
+        # ¸ù¾İ¹ıÂËÌõ¼ş»ñÈ¡Êı¾İ
         filtered_changes = self._get_filtered_changes()
-        
-        # æ·»åŠ æ•°æ®
+
+        # Ìí¼ÓÊı¾İ
         for change in filtered_changes:
             status_text = self._get_status_text(change.change_type)
             size_change = self._get_size_change_text(change)
             file_name = Path(change.file_path).name
-            
-            # ä½¿ç”¨æ–‡ä»¶è·¯å¾„ä½œä¸ºç¬¬0åˆ—çš„æ˜¾ç¤ºæ–‡æœ¬
-            item_id = self.tree.insert("", "end", 
-                                     text=change.file_path,  # ç¬¬0åˆ—æ˜¾ç¤ºå®Œæ•´è·¯å¾„
-                                     values=(
-                                         status_text,
-                                         file_name,
-                                         size_change
-                                     ))
-            
-            # å°†item_idæ˜ å°„åˆ°changeå¯¹è±¡
+
+            # Ê¹ÓÃÎÄ¼şÂ·¾¶×÷ÎªµÚ0ÁĞµÄÏÔÊ¾ÎÄ±¾
+            item_id = self.tree.insert("", "end",
+                                       text=change.file_path,  # µÚ0ÁĞÏÔÊ¾ÍêÕûÂ·¾¶
+                                       values=(
+                                           status_text,
+                                           file_name,
+                                           size_change
+                                       ))
+
+            # ½«item_idÓ³Éäµ½change¶ÔÏó
             self.item_to_change[item_id] = change
-        
-        # å¦‚æœæœ‰é¡¹ç›®ï¼Œé»˜è®¤é€‰æ‹©ç¬¬ä¸€ä¸ª
+
+        # Èç¹ûÓĞÏîÄ¿£¬Ä¬ÈÏÑ¡ÔñµÚÒ»¸ö
         items = self.tree.get_children()
         if items:
             self.tree.selection_set(items[0])
             self._on_selection_changed(None)
-    
+
     def _get_filtered_changes(self) -> List[FileChange]:
-        """è·å–è¿‡æ»¤åçš„å˜æ›´åˆ—è¡¨"""
+        """»ñÈ¡¹ıÂËºóµÄ±ä¸üÁĞ±í"""
         filter_type = self.filter_var.get()
-        
+
         if filter_type == "all":
             return self.changes
         elif filter_type == "added":
@@ -336,18 +365,18 @@ class FileListWindow:
             return [c for c in self.changes if c.change_type == ChangeType.DELETED]
         else:
             return self.changes
-    
+
     def _get_status_text(self, change_type: ChangeType) -> str:
-        """è·å–çŠ¶æ€æ–‡æœ¬"""
+        """»ñÈ¡×´Ì¬ÎÄ±¾"""
         status_map = {
-            ChangeType.ADDED: "æ–°å¢",
-            ChangeType.MODIFIED: "ä¿®æ”¹",
-            ChangeType.DELETED: "åˆ é™¤"
+            ChangeType.ADDED: "ĞÂÔö",
+            ChangeType.MODIFIED: "ĞŞ¸Ä",
+            ChangeType.DELETED: "É¾³ı"
         }
-        return status_map.get(change_type, "æœªçŸ¥")
-    
+        return status_map.get(change_type, "Î´Öª")
+
     def _get_size_change_text(self, change: FileChange) -> str:
-        """è·å–å¤§å°å˜åŒ–æ–‡æœ¬"""
+        """»ñÈ¡´óĞ¡±ä»¯ÎÄ±¾"""
         if change.change_type == ChangeType.ADDED:
             return self._format_size(change.new_size) if change.new_size else "-"
         elif change.change_type == ChangeType.DELETED:
@@ -360,286 +389,286 @@ class FileListWindow:
                 elif diff < 0:
                     return f"-{self._format_size(-diff)}"
                 else:
-                    return "æ— å˜åŒ–"
+                    return "ÎŞ±ä»¯"
         return "-"
-    
+
     def _format_size(self, size_bytes: int) -> str:
-        """æ ¼å¼åŒ–æ–‡ä»¶å¤§å°"""
+        """¸ñÊ½»¯ÎÄ¼ş´óĞ¡"""
         if size_bytes is None:
             return "-"
-        
+
         for unit in ['B', 'KB', 'MB', 'GB']:
             if size_bytes < 1024:
                 return f"{size_bytes:.1f}{unit}"
             size_bytes /= 1024
         return f"{size_bytes:.1f}TB"
-    
+
     def _apply_filter(self):
-        """åº”ç”¨è¿‡æ»¤"""
+        """Ó¦ÓÃ¹ıÂË"""
         self._populate_tree()
-    
+
     def _on_selection_changed(self, event):
-        """é€‰æ‹©æ”¹å˜äº‹ä»¶"""
+        """Ñ¡Ôñ¸Ä±äÊÂ¼ş"""
         selection = self.tree.selection()
         if not selection:
             self._show_default_message()
             return
-        
-        # ä»æ˜ å°„å­—å…¸ä¸­è·å–å¯¹åº”çš„FileChangeå¯¹è±¡
+
+        # ´ÓÓ³Éä×ÖµäÖĞ»ñÈ¡¶ÔÓ¦µÄFileChange¶ÔÏó
         item_id = selection[0]
         selected_change = self.item_to_change.get(item_id)
-        
+
         if selected_change:
             self.selected_change = selected_change
             self._show_file_diff(selected_change)
-    
+
     def _on_double_click(self, event):
-        """åŒå‡»äº‹ä»¶"""
-        # åŒå‡»æ—¶å±•å¼€/æŠ˜å æ ‘èŠ‚ç‚¹æˆ–æ‰§è¡Œå…¶ä»–æ“ä½œ
+        """Ë«»÷ÊÂ¼ş"""
+        # Ë«»÷Ê±Õ¹¿ª/ÕÛµşÊ÷½Úµã»òÖ´ĞĞÆäËû²Ù×÷
         pass
-    
+
     def _show_default_message(self):
-        """æ˜¾ç¤ºé»˜è®¤æç¤ºä¿¡æ¯"""
+        """ÏÔÊ¾Ä¬ÈÏÌáÊ¾ĞÅÏ¢"""
         self.diff_text.config(state="normal")
         self.diff_text.delete(1.0, tk.END)
-        
+
         self.file_path_label.configure(text="")
-        
-        message = "è¯·åœ¨å·¦ä¾§é€‰æ‹©ä¸€ä¸ªæ–‡ä»¶æŸ¥çœ‹å˜æ›´è¯¦æƒ…\n\n"
-        message += "è¯´æ˜:\n"
-        message += "â€¢ ç»¿è‰²èƒŒæ™¯ï¼šæ–°å¢çš„å†…å®¹\n"
-        message += "â€¢ çº¢è‰²èƒŒæ™¯ï¼šåˆ é™¤çš„å†…å®¹\n"
-        message += "â€¢ è“è‰²èƒŒæ™¯ï¼šæ–‡ä»¶å¤´ä¿¡æ¯\n"
-        message += "â€¢ é»„è‰²èƒŒæ™¯ï¼šé‡è¦æç¤ºä¿¡æ¯"
-        
+
+        message = "ÇëÔÚ×ó²àÑ¡ÔñÒ»¸öÎÄ¼ş²é¿´±ä¸üÏêÇé\n\n"
+        message += "ËµÃ÷:\n"
+        message += "? ÂÌÉ«±³¾°£ºĞÂÔöµÄÄÚÈİ\n"
+        message += "? ºìÉ«±³¾°£ºÉ¾³ıµÄÄÚÈİ\n"
+        message += "? À¶É«±³¾°£ºÎÄ¼şÍ·ĞÅÏ¢\n"
+        message += "? »ÆÉ«±³¾°£ºÖØÒªÌáÊ¾ĞÅÏ¢"
+
         self.diff_text.insert(1.0, message)
         self.diff_text.tag_add("info", 1.0, tk.END)
         self.diff_text.config(state="disabled")
-    
+
     def _show_file_diff(self, change: FileChange):
-        """æ˜¾ç¤ºæ–‡ä»¶å·®å¼‚"""
-        self.file_path_label.configure(text=f"æ–‡ä»¶: {change.file_path}")
-        
+        """ÏÔÊ¾ÎÄ¼ş²îÒì"""
+        self.file_path_label.configure(text=f"ÎÄ¼ş: {change.file_path}")
+
         self.diff_text.config(state="normal")
         self.diff_text.delete(1.0, tk.END)
-        
+
         if change.change_type == ChangeType.ADDED:
             self._show_added_file(change)
         elif change.change_type == ChangeType.DELETED:
             self._show_deleted_file(change)
         elif change.change_type == ChangeType.MODIFIED:
             self._show_modified_file(change)
-        
+
         self.diff_text.config(state="disabled")
-    
+
     def _show_added_file(self, change: FileChange):
-        """æ˜¾ç¤ºæ–°å¢æ–‡ä»¶"""
+        """ÏÔÊ¾ĞÂÔöÎÄ¼ş"""
         current_file = Path(self.app.input_dir.get()) / change.file_path
-        
-        # æ’å…¥æ–‡ä»¶å¤´
-        header = f"=== æ–°å¢æ–‡ä»¶: {change.file_path} ===\n"
+
+        # ²åÈëÎÄ¼şÍ·
+        header = f"=== ĞÂÔöÎÄ¼ş: {change.file_path} ===\n"
         self.diff_text.insert(tk.END, header)
         self.diff_text.tag_add("header", "end-2l", "end-1l")
-        
+
         if not current_file.exists():
-            self.diff_text.insert(tk.END, "æ–‡ä»¶ä¸å­˜åœ¨\n")
+            self.diff_text.insert(tk.END, "ÎÄ¼ş²»´æÔÚ\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
-        
+
         if not self._is_text_file(current_file):
-            self.diff_text.insert(tk.END, "äºŒè¿›åˆ¶æ–‡ä»¶ï¼Œæ— æ³•æ˜¾ç¤ºå†…å®¹\n")
+            self.diff_text.insert(tk.END, "¶ş½øÖÆÎÄ¼ş£¬ÎŞ·¨ÏÔÊ¾ÄÚÈİ\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
-        
+
         try:
             content = self._read_file_content(current_file)
             if content is None:
                 return
-            
-            # æ˜¾ç¤ºå†…å®¹ï¼ˆæ‰€æœ‰è¡Œéƒ½æ ‡è®°ä¸ºæ·»åŠ ï¼‰
+
+            # ÏÔÊ¾ÄÚÈİ£¨ËùÓĞĞĞ¶¼±ê¼ÇÎªÌí¼Ó£©
             for i, line in enumerate(content.splitlines(), 1):
-                line_text = f"+{i:4d} | {line}\n"
+                line_text = f"{i:4d}\t{line}\n"
                 self.diff_text.insert(tk.END, line_text)
                 self.diff_text.tag_add("added", "end-2l", "end-1l")
-                
+
         except Exception as e:
-            error_msg = f"è¯»å–æ–‡ä»¶å¤±è´¥: {e}\n"
+            error_msg = f"¶ÁÈ¡ÎÄ¼şÊ§°Ü: {e}\n"
             self.diff_text.insert(tk.END, error_msg)
             self.diff_text.tag_add("info", "end-2l", "end-1l")
-    
+
     def _show_deleted_file(self, change: FileChange):
-        """æ˜¾ç¤ºåˆ é™¤æ–‡ä»¶"""
-        # æ’å…¥æ–‡ä»¶å¤´
-        header = f"=== åˆ é™¤æ–‡ä»¶: {change.file_path} ===\n"
+        """ÏÔÊ¾É¾³ıÎÄ¼ş"""
+        # ²åÈëÎÄ¼şÍ·
+        header = f"=== É¾³ıÎÄ¼ş: {change.file_path} ===\n"
         self.diff_text.insert(tk.END, header)
         self.diff_text.tag_add("header", "end-2l", "end-1l")
-        
-        # å°è¯•ä»ä¹‹å‰çš„zipåŒ…ä¸­è·å–æ–‡ä»¶å†…å®¹
+
+        # ³¢ÊÔ´ÓÖ®Ç°µÄzip°üÖĞ»ñÈ¡ÎÄ¼şÄÚÈİ
         old_content = self._get_file_from_previous_version(change.file_path)
-        
         if old_content is None:
-            self.diff_text.insert(tk.END, "æ— æ³•è·å–æ–‡ä»¶çš„å†å²ç‰ˆæœ¬å†…å®¹\n")
+            self.diff_text.insert(tk.END, "ÎŞ·¨»ñÈ¡ÎÄ¼şµÄÀúÊ·°æ±¾ÄÚÈİ\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
-        
-        # æ˜¾ç¤ºåˆ é™¤çš„å†…å®¹
+
+        # ÏÔÊ¾É¾³ıµÄÄÚÈİ
         for i, line in enumerate(old_content.splitlines(), 1):
-            line_text = f"-{i:4d} | {line}\n"
+            line_text = f"{i:4d}\t{line}\n"
             self.diff_text.insert(tk.END, line_text)
             self.diff_text.tag_add("removed", "end-2l", "end-1l")
-    
+
     def _show_modified_file(self, change: FileChange):
-        """æ˜¾ç¤ºä¿®æ”¹æ–‡ä»¶"""
+        """ÏÔÊ¾ĞŞ¸ÄÎÄ¼ş"""
         current_file = Path(self.app.input_dir.get()) / change.file_path
-        
-        # æ’å…¥æ–‡ä»¶å¤´
-        header = f"=== çº¢è‰²ä»£è¡¨åˆ é™¤,ç»¿è‰²ä»£è¡¨æ–°å¢;ä¿®æ”¹çš„è¡Œä¸€èˆ¬æ˜¯åˆ é™¤åŸè¡Œ+æ–°å¢ä¿®æ”¹åçš„è¡Œ ===\n"
+
+        # ²åÈëÎÄ¼şÍ·
+        header = f"=== ºìÉ«´ú±íÉ¾³ı,ÂÌÉ«´ú±íĞÂÔö;ĞŞ¸ÄµÄĞĞÒ»°ãÊÇÉ¾³ıÔ­ĞĞ+ĞÂÔöĞŞ¸ÄºóµÄĞĞ ===\n"
         self.diff_text.insert(tk.END, header)
         self.diff_text.tag_add("header", "end-2l", "end-1l")
-        
+
         if not current_file.exists():
-            self.diff_text.insert(tk.END, "å½“å‰æ–‡ä»¶ä¸å­˜åœ¨\n")
+            self.diff_text.insert(tk.END, "µ±Ç°ÎÄ¼ş²»´æÔÚ\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
-        
+
         if not self._is_text_file(current_file):
-            self.diff_text.insert(tk.END, "äºŒè¿›åˆ¶æ–‡ä»¶ï¼Œæ— æ³•æ˜¾ç¤ºå†…å®¹å·®å¼‚\n")
+            self.diff_text.insert(tk.END, "¶ş½øÖÆÎÄ¼ş£¬ÎŞ·¨ÏÔÊ¾ÄÚÈİ²îÒì\n")
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return
-        
-        # è·å–å½“å‰æ–‡ä»¶å†…å®¹
+
+        # »ñÈ¡µ±Ç°ÎÄ¼şÄÚÈİ
         current_content = self._read_file_content(current_file)
         if current_content is None:
             return
-        
-        # è·å–å†å²ç‰ˆæœ¬å†…å®¹
+
+        # »ñÈ¡ÀúÊ·°æ±¾ÄÚÈİ
         old_content = self._get_file_from_previous_version(change.file_path)
         if old_content is None:
-            self.diff_text.insert(tk.END, "æ— æ³•è·å–æ–‡ä»¶çš„å†å²ç‰ˆæœ¬ï¼Œæ˜¾ç¤ºå½“å‰å†…å®¹ï¼š\n\n")
+            self.diff_text.insert(tk.END, "ÎŞ·¨»ñÈ¡ÎÄ¼şµÄÀúÊ·°æ±¾£¬ÏÔÊ¾µ±Ç°ÄÚÈİ£º\n\n")
             self.diff_text.tag_add("info", "end-3l", "end-1l")
-            
+
             for i, line in enumerate(current_content.splitlines(), 1):
                 line_text = f" {i:4d} | {line}\n"
                 self.diff_text.insert(tk.END, line_text)
                 self.diff_text.tag_add("context", "end-2l", "end-1l")
             return
-        
-        # ç”Ÿæˆå·®å¼‚
+
+        # Éú³É²îÒì
         self._show_unified_diff(old_content, current_content, change.file_path)
-    
+
     def _show_unified_diff(self, old_content: str, new_content: str, file_path: str):
-        """æ˜¾ç¤ºç»Ÿä¸€æ ¼å¼çš„å·®å¼‚"""
+        """ÏÔÊ¾Í³Ò»¸ñÊ½µÄ²îÒì"""
         old_lines = old_content.splitlines(keepends=True)
         new_lines = new_content.splitlines(keepends=True)
-        
+
         diff = difflib.unified_diff(
             old_lines,
             new_lines,
-            fromfile=f"æ—§ç‰ˆæœ¬\\{file_path}",
-            tofile=f"æ–°ç‰ˆæœ¬\\{file_path}"
+            fromfile=f"¾É°æ±¾\\{file_path}",
+            tofile=f"ĞÂ°æ±¾\\{file_path}"
         )
         old_line_num = 0
         new_line_num = 0
-        in_hunk = False
-        current_hunk_header = ""
-        
+        just_del = False
         for line in diff:
             if line.startswith("+++") or line.startswith("---"):
                 self.diff_text.insert(tk.END, line)
                 self.diff_text.tag_add("header", "end-2l", "end-1l")
             elif line.startswith("@@"):
-                in_hunk = True
-                current_hunk_header = line
-                # ä» @@ -x,y +z,w @@ è§£æè¡Œå·ä¿¡æ¯
+                # ´Ó @@ -x,y +z,w @@ ½âÎöĞĞºÅĞÅÏ¢
                 import re
                 match = re.search(r'@@ -(\d+),(\d+) \+(\d+),(\d+) @@', line)
                 if match:
-                    old_line_num = int(match.group(1)) - 1  # ä»æŒ‡å®šè¡Œå·å¼€å§‹
+                    old_line_num = int(match.group(1)) - 1  # ´ÓÖ¸¶¨ĞĞºÅ¿ªÊ¼
+                    old_lines = int(match.group(2) or 1)
                     new_line_num = int(match.group(3)) - 1
-                self.diff_text.insert(tk.END, line)
+                    new_lines = int(match.group(4) or 1)
+
+                read_line = f"\nÓĞÒ»´¦±ä¸ü: Ô­ÎÄ¼şµÚ{old_line_num + 1}-{old_line_num + old_lines}ĞĞ ¡ú ĞÂÎÄ¼şµÚ{new_line_num + 1}-{new_line_num + new_lines}ĞĞ\n"
+                self.diff_text.insert(tk.END, read_line)
                 self.diff_text.tag_add("info", "end-2l", "end-1l")
             elif line.startswith("+"):
                 new_line_num += 1
                 self.diff_text.insert(tk.END, f"{old_line_num:3d} {new_line_num:3d} {line}")
                 self.diff_text.tag_add("added", "end-2l", "end-1l")
             elif line.startswith("-"):
+                just_del = True
                 old_line_num += 1
-                self.diff_text.insert(tk.END, f"{-old_line_num:3d} {new_line_num:3d} {line}")
+                self.diff_text.insert(tk.END, f"{old_line_num:3d} {new_line_num + 1:3d} {line}")
                 self.diff_text.tag_add("removed", "end-2l", "end-1l")
             else:
                 old_line_num += 1
                 new_line_num += 1
-                self.diff_text.insert(tk.END, line)
+                self.diff_text.insert(tk.END, f"{old_line_num:3d} {new_line_num:3d} {line}")
                 self.diff_text.tag_add("context", "end-2l", "end-1l")
-    
+
     def _get_file_from_previous_version(self, file_path: str) -> Optional[str]:
-        """ä»ç¼“å­˜ä¸­è·å–æ–‡ä»¶çš„ä¸Šä¸€ä¸ªç‰ˆæœ¬å†…å®¹"""
-        # ä¼˜å…ˆä»ç¼“å­˜è·å–
+        """´Ó»º´æÖĞ»ñÈ¡ÎÄ¼şµÄÉÏÒ»¸ö°æ±¾ÄÚÈİ"""
+        # ÓÅÏÈ´Ó»º´æ»ñÈ¡
         cached_content = self.cache_manager.get_cached_content(file_path)
         if cached_content is not None:
             return cached_content
-        
-        # å¦‚æœç¼“å­˜ä¸­æ²¡æœ‰ï¼Œå°è¯•ä»zipåŒ…è·å–ï¼ˆå‘åå…¼å®¹ï¼‰
+
+        # Èç¹û»º´æÖĞÃ»ÓĞ£¬³¢ÊÔ´Ózip°ü»ñÈ¡£¨Ïòºó¼æÈİ£©
         if not self.app.version_manager:
             return None
-        
-        # è·å–ç‰ˆæœ¬å†å²
+
+        # »ñÈ¡°æ±¾ÀúÊ·
         versions = self.app.version_manager.get_versions()
         if not versions:
             return None
-        
-        # åœ¨è¾“å‡ºç›®å½•ä¸­æŸ¥æ‰¾zipæ–‡ä»¶
+
+        # ÔÚÊä³öÄ¿Â¼ÖĞ²éÕÒzipÎÄ¼ş
         output_dir = Path(self.app.output_dir.get())
-        
+
         for version_info in versions:
             zip_file_path = output_dir / f"{version_info.version}.zip"
             if zip_file_path.exists():
                 try:
                     with zipfile.ZipFile(zip_file_path, 'r') as zf:
                         if file_path in zf.namelist():
-                            content = zf.read(file_path).decode('utf-8', errors='ignore')
+                            content = zf.read(file_path).decode('gbk', errors='ignore')
                             return content
                 except (zipfile.BadZipFile, UnicodeDecodeError, KeyError):
                     continue
-        
+
         return None
-    
+
     def _is_text_file(self, file_path: Path) -> bool:
-        """åˆ¤æ–­æ˜¯å¦ä¸ºæ–‡æœ¬æ–‡ä»¶"""
+        """ÅĞ¶ÏÊÇ·ñÎªÎÄ±¾ÎÄ¼ş"""
         text_extensions = {
             '.txt', '.md', '.py', '.js', '.html', '.css', '.xml', '.json',
             '.ini', '.cfg', '.conf', '.log', '.csv', '.sql', '.sh', '.bat',
             '.yml', '.yaml', '.toml', '.properties'
         }
-        
+
         if file_path.suffix.lower() in text_extensions:
             return True
-        
-        # å°è¯•è¯»å–æ–‡ä»¶å¼€å¤´åˆ¤æ–­
+
+        # ³¢ÊÔ¶ÁÈ¡ÎÄ¼ş¿ªÍ·ÅĞ¶Ï
         try:
             with open(file_path, 'rb') as f:
                 sample = f.read(8192)
-                # æ£€æŸ¥æ˜¯å¦åŒ…å«nullå­—èŠ‚
+                # ¼ì²éÊÇ·ñ°üº¬null×Ö½Ú
                 if b'\\0' in sample:
                     return False
-                # å°è¯•è§£ç 
+                # ³¢ÊÔ½âÂë
                 sample.decode('utf-8')
                 return True
         except (UnicodeDecodeError, IOError):
             return False
-    
+
     def _read_file_content(self, file_path: Path) -> Optional[str]:
-        """è¯»å–æ–‡ä»¶å†…å®¹"""
+        """¶ÁÈ¡ÎÄ¼şÄÚÈİ"""
         try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(file_path, 'r', encoding='gbk', errors='ignore') as f:
                 return f.read()
         except IOError as e:
-            error_msg = f"è¯»å–æ–‡ä»¶å¤±è´¥: {e}\n"
+            error_msg = f"¶ÁÈ¡ÎÄ¼şÊ§°Ü: {e}\n"
             self.diff_text.insert(tk.END, error_msg)
             self.diff_text.tag_add("info", "end-2l", "end-1l")
             return None
-    
+
     def _refresh_diff(self):
-        """åˆ·æ–°å·®å¼‚æ˜¾ç¤º"""
+        """Ë¢ĞÂ²îÒìÏÔÊ¾"""
         if self.selected_change:
             self._show_file_diff(self.selected_change)

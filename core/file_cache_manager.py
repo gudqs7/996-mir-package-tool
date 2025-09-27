@@ -83,7 +83,8 @@ class FileCacheManager:
         path_hash = hashlib.md5(file_path.encode('utf-8')).hexdigest()
         cache_subdir = self.cache_dir / path_hash[:2] / path_hash[2:4]
         cache_subdir.mkdir(parents=True, exist_ok=True)
-        return cache_subdir / f"{file_hash}.cache"
+        filename, extension = os.path.splitext(file_path)
+        return cache_subdir / f"{file_hash}.{extension}"
     
     def cache_file(self, file_path: Path, relative_path: str) -> bool:
         """
@@ -162,7 +163,7 @@ class FileCacheManager:
                 return None
             
             # 读取文件内容
-            with open(cache_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(cache_file_path, 'r', encoding='gbk', errors='ignore') as f:
                 return f.read()
                 
         except Exception as e:
