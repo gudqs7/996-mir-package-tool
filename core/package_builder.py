@@ -52,7 +52,7 @@ class PackageBuilder:
                     if source_file.exists() and source_file.is_file():
                         try:
                             # 使用相对路径保持目录结构
-                            zf.write(source_file, relative_path)
+                            zf.write(source_file, 'MirServer\\' + relative_path)
 
                             # 缓存文件内容用于后续差异对比
                             self.cache_manager.cache_file(source_file, relative_path)

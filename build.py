@@ -60,7 +60,7 @@ def build_exe():
             print("构建成功! ✓")
             
             # 检查输出文件
-            exe_file = Path("dist/IncrementalPacker.exe")
+            exe_file = Path("dist/996母包打包工具.exe")
             if exe_file.exists():
                 size_mb = exe_file.stat().st_size / (1024 * 1024)
                 print(f"exe 文件位置: {exe_file.absolute()}")

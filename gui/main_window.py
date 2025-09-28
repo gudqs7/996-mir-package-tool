@@ -669,7 +669,6 @@ class IncrementalPackerApp:
                 self.current_file_info = {}
                 self.view_changes_btn.configure(state="disabled")
                 self.package_btn.configure(state="disabled")
-                self.full_btn.configure(state="disabled")
                 self.status_text.set("版本已重置，请重新扫描文件")
 
     def _show_version_history(self):
